@@ -1,7 +1,7 @@
 name: Build Windows Binary
 
 on: 
-  push:
+  push: 
     branches: [ main ]
   pull_request: 
     branches: [ main ]
@@ -17,13 +17,13 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses:  actions/checkout@v4
-        with:
+        uses: actions/checkout@v4
+        with: 
           fetch-depth: 0  # 获取完整历史以便访问标签
       
       - name:  Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
+        with: 
           toolchain: stable
       
       - name: Cache cargo registry
@@ -37,7 +37,7 @@ jobs:
       - name: Cache cargo index
         uses: actions/cache@v4
         with:
-          path: ~/.cargo/git
+          path: ~/. cargo/git
           key: ${{ runner. os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-git-
@@ -61,25 +61,22 @@ jobs:
           echo "version=${VERSION_ESING}" >> $GITHUB_OUTPUT
           echo "Building version: ${VERSION_ESING}"
       
-      - name: Update version in Cargo.toml (optional)
-        shell: bash
-        run: |
-          # 如果需要将版本号写入 Cargo.toml，可以取消注释以下代码
-          # sed -i 's/^version = . */version = "${{ steps.version.outputs.version }}"/' surfer/Cargo.toml
-          echo "Version:  ${{ steps.version.outputs. version }}"
-      
       - name: Build release binary
         run: |
           cargo build --release --locked --features accesskit --color always
       
-      - name:  Prepare artifacts
+      - name: Prepare artifacts
         shell: bash
         run: |
+          # 创建 dist 目录
           mkdir -p dist
-          cp target/release/surfer. exe dist/surfer.exe
-          cp target/release/surver.exe dist/surver.exe
+          # 复制编译产物
+          cp target/release/surfer.exe dist/
+          cp target/release/surver.exe dist/
           # 创建版本信息文件
-          echo "${{ steps.version.outputs.version }}" > dist/VERSION. txt
+          echo "${{ steps.version.outputs.version }}" > dist/VERSION.txt
+          # 验证文件是否存在
+          ls -la dist/
       
       - name: Create zip archive
         shell: bash
@@ -90,18 +87,18 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name:  surfer-windows-esing-${{ steps.version.outputs. version }}
+          name: surfer-windows-esing-${{ steps.version.outputs.version }}
           path: |
-            surfer_win_esing.zip
+            surfer_win_esing. zip
             target/release/surfer.exe
-            target/release/surver. exe
+            target/release/surver.exe
           retention-days: 30
       
       - name: Upload release assets (on tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
-        with:
-          files:  |
+        with: 
+          files: |
             surfer_win_esing.zip
           tag_name: ${{ github.ref_name }}
         env:
