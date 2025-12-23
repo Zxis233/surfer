@@ -1,0 +1,108 @@
+name: Build Windows Binary
+
+on: 
+  push:
+    branches: [ main ]
+  pull_request: 
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: ""
+
+jobs:
+  build-windows:
+    runs-on:  windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses:  actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史以便访问标签
+      
+      - name:  Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path:  ~/. cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+      
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner. os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-git-
+      
+      - name: Cache cargo build
+        uses:  actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-target-
+      
+      - name: Get version info
+        id: version
+        shell: bash
+        run: |
+          # 获取最新的 git tag，如果没有则使用 commit hash
+          VERSION=$(git describe --tags --always --dirty)
+          # 添加 -Esing 后缀
+          VERSION_ESING="${VERSION}-Esing"
+          echo "version=${VERSION_ESING}" >> $GITHUB_OUTPUT
+          echo "Building version: ${VERSION_ESING}"
+      
+      - name: Update version in Cargo.toml (optional)
+        shell: bash
+        run: |
+          # 如果需要将版本号写入 Cargo.toml，可以取消注释以下代码
+          # sed -i 's/^version = . */version = "${{ steps.version.outputs.version }}"/' surfer/Cargo.toml
+          echo "Version:  ${{ steps.version.outputs. version }}"
+      
+      - name: Build release binary
+        run: |
+          cargo build --release --locked --features accesskit --color always
+      
+      - name:  Prepare artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp target/release/surfer. exe dist/surfer.exe
+          cp target/release/surver.exe dist/surver.exe
+          # 创建版本信息文件
+          echo "${{ steps.version.outputs.version }}" > dist/VERSION. txt
+      
+      - name: Create zip archive
+        shell: bash
+        run: |
+          cd dist
+          7z a ../surfer_win_esing.zip surfer.exe surver.exe VERSION.txt
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name:  surfer-windows-esing-${{ steps.version.outputs. version }}
+          path: |
+            surfer_win_esing.zip
+            target/release/surfer.exe
+            target/release/surver. exe
+          retention-days: 30
+      
+      - name: Upload release assets (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files:  |
+            surfer_win_esing.zip
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
