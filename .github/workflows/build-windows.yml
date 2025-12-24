@@ -64,7 +64,7 @@ jobs:
       
       - name: Build release binary
         run: |
-          cargo build --release --locked --features accesskit --color always
+          CUSTOM_GIT_DESCRIBE="${VERGEN_GIT_DESCRIBE}" cargo build --release --locked --features accesskit --color always
       
       - name: Prepare artifacts
         shell: bash
