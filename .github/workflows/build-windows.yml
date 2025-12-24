@@ -58,13 +58,14 @@ jobs:
           VERSION=$(git describe --tags --always --dirty)
           # 添加 -Esing 后缀
           VERGEN_GIT_DESCRIBE="${VERSION}-Esing"
+          CUSTOM_GIT_DESCRIBE="${VERSION}-Esing"
           echo "version=${VERGEN_GIT_DESCRIBE}" >> $GITHUB_OUTPUT
-          echo "Building version: ${VERGEN_GIT_DESCRIBE}"
+          echo "Building version: ${CUSTOM_GIT_DESCRIBE}"
           
       
       - name: Build release binary
         run: |
-          cargo build --release --locked --features accesskit --color always CUSTOM_GIT_DESCRIBE="${VERGEN_GIT_DESCRIBE}" 
+          cargo build --release --locked --features accesskit --color always
       
       - name: Prepare artifacts
         shell: bash
