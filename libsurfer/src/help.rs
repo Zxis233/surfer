@@ -82,13 +82,13 @@ pub fn draw_about_window(ctx: &Context, msgs: &mut Vec<Message>) {
                 ));
                 if ui
                     .small_button(format!(
-                        "Git version: {ver}",
+                        "Git version: {ver}-Esing",
                         ver = env!("VERGEN_GIT_DESCRIBE")
                     ))
                     .on_hover_text("Click to copy git version")
                     .clicked()
                 {
-                    ctx.copy_text(env!("VERGEN_GIT_DESCRIBE").to_string());
+                    ctx.copy_text(format!("{}-Esing", env!("VERGEN_GIT_DESCRIBE")));
                 }
                 ui.label(format!(
                     "Build date: {date}",

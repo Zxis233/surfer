@@ -1063,10 +1063,10 @@ default = "$name$ %rd_rs1_n0_Register_int%, %c_rs2_n0_Register_int%"
 default = "$name$ %rd_rs1_n0_Register_int%, %imm%"
 
 [format-33-0.repr]
-default = "$name$ sp, %imm%"
+default = "$name$ x2, %imm%"
 
 [format-34-0.repr]
-default = "$name$ %rd_p_Register_int_c%, sp, %imm%"
+default = "$name$ %rd_p_Register_int_c%, x2, %imm%"
 
 [format-05-0.repr]
 default = "$name$ %rd_rs1_n0_Register_int%, %imm%"
@@ -1096,7 +1096,7 @@ default = "$name$ %rs1_n0_Register_int%"
 default = "$name$ %rd_p_Register_int_c%, %himm%(%rs1_p_Register_int_c%)"
 
 [format-14-0.repr]
-default = "$name$ %rd_n0_Register_int%, %himm%(sp)"
+default = "$name$ %rd_n0_Register_int%, %himm%(x2)"
 
 [format-15-0.repr]
 default = "$name$ %rd_n0_Register_int%, %imm%"
@@ -1108,7 +1108,7 @@ default = "$name$ %rd_n2_Register_int%, %himm%"
 default = "$name$ %rd_p_Register_int_c%, %himm%(%rs1_p_Register_int_c%)"
 
 [format-18-0.repr]
-default = "$name$ %rd_n0_Register_int%, %himm%(sp)"
+default = "$name$ %rd_n0_Register_int%, %himm%(x2)"
 
 [format-19-0.repr]
 default = "$name$ %rd_n0_Register_int%, %c_rs2_n0_Register_int%"
@@ -1120,7 +1120,7 @@ default = "$name$"
 default = "$name$ %rs2_p_Register_int_c%, %himm%(%rs1_p_Register_int_c%)"
 
 [format-22-0.repr]
-default = "$name$ %c_rs2_Register_int%, %himm%(sp)"
+default = "$name$ %c_rs2_Register_int%, %himm%(x2)"
 
 [format-23-0.repr]
 default = "$name$ %rd_rs1_n0_Register_int%, %imm%"
@@ -1135,7 +1135,7 @@ default = "$name$ %rd_rs1_p_Register_int_c%, %imm%"
 default = "$name$ %rs2_p_Register_int_c%, %himm%(%rs1_p_Register_int_c%)"
 
 [format-26-0.repr]
-default = "$name$ %c_rs2_Register_int%, %himm%(sp)"
+default = "$name$ %c_rs2_Register_int%, %himm%(x2)"
 
 [format-01-0.instructions."c.add"]
 mask = 0xf003
