@@ -9,7 +9,6 @@ use crate::async_util::{perform_async_work, perform_work};
 use crate::cxxrtl_container::CxxrtlContainer;
 use crate::file_dialog::OpenMode;
 use crate::remote::{get_hierarchy_from_server, get_server_status, server_reload};
-use crate::spawn;
 use crate::util::get_multi_extension;
 use camino::{Utf8Path, Utf8PathBuf};
 use eyre::Report;
@@ -347,7 +346,12 @@ impl SystemState {
         }
     }
 
-    pub fn load_wave_from_url(&mut self, url: String, load_options: LoadOptions) {
+    pub fn load_wave_from_url(
+        &mut self,
+        url: String,
+        load_options: LoadOptions,
+        force_switch: bool,
+    ) {
         match url_to_wavesource(&url) {
             // We want to support opening cxxrtl urls using open url and friends,
             // so we'll special case
@@ -361,7 +365,8 @@ impl SystemState {
                 let sender = self.channels.msg_sender.clone();
                 let url_ = url.clone();
                 let file_index = self.user.selected_server_file_index;
-                let task = async move {
+                info!("Loading wave from url: {url}");
+                perform_async_work(async move {
                     let maybe_response = reqwest::get(&url)
                         .map(|e| e.with_context(|| format!("Failed fetch download {url}")))
                         .await;
@@ -397,11 +402,28 @@ impl SystemState {
                             LoadOptions::KeepAvailable | LoadOptions::KeepAll => {
                                 // Request a reload (will also get status and request hierarchy if needed)
                                 if let Some(file_index) = file_index {
-                                    info!("Reloahding from surfer server at: {url}");
-                                    server_reload(sender.clone(), url, load_options, file_index);
+                                    if force_switch {
+                                        get_hierarchy_from_server(
+                                            sender.clone(),
+                                            url,
+                                            load_options,
+                                            file_index,
+                                        );
+                                    } else {
+                                        info!("Reloading from surver instance at: {url}");
+                                        server_reload(
+                                            sender.clone(),
+                                            url,
+                                            load_options,
+                                            file_index,
+                                        );
+                                    }
+                                } else if force_switch {
+                                    // We started Surfer with a Surver URL as argument, so request status
+                                    get_server_status(sender.clone(), url.clone(), 0);
                                 } else {
                                     warn!(
-                                        "Cannot reload from surfer server without a selected file index"
+                                        "Cannot reload from surver instance without a selected file index"
                                     );
                                 }
                             }
@@ -422,8 +444,7 @@ impl SystemState {
                     if let Err(e) = sender.send(msg) {
                         error!("Failed to send message: {e}");
                     }
-                };
-                spawn!(task);
+                });
 
                 self.progress_tracker =
                     Some(LoadProgress::new(LoadProgressStatus::Downloading(url_)));
@@ -678,7 +699,7 @@ impl SystemState {
                 });
             }
             LoadSignalPayload::Remote(server) => {
-                let task = async move {
+                perform_async_work(async move {
                     let res =
                         crate::remote::get_signals(server.clone(), &signals, max_url_length, 0)
                             .await
@@ -697,8 +718,7 @@ impl SystemState {
                     if let Err(e) = sender.send(msg) {
                         error!("Failed to send message: {e}");
                     }
-                };
-                spawn!(task);
+                });
             }
         }
 

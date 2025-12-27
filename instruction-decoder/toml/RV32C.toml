@@ -854,7 +854,7 @@ Register_int = [
     "x30",
     "x31",
 ]
-Register_int_c = ["s0", "s1", "a0", "a1", "a2", "a3", "a4", "a5"]
+Register_int_c = ["x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15"]
 Register_float = [
     "ft0",
     "ft1",

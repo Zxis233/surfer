@@ -16,9 +16,8 @@ use surver::{
 };
 
 use super::HierarchyResponse;
-use crate::async_util::sleep_ms;
+use crate::async_util::{perform_async_work, sleep_ms};
 use crate::message::Message;
-use crate::spawn;
 use crate::wave_source::{LoadOptions, WaveSource};
 use crate::wellen::{BodyResult, HeaderResult};
 
@@ -261,7 +260,7 @@ pub fn get_hierarchy_from_server(
     let start = web_time::Instant::now();
     let source = WaveSource::Url(server.clone());
 
-    let task = async move {
+    perform_async_work(async move {
         let res = get_hierarchy(server.clone(), file_index)
             .await
             .map_err(|e| anyhow!("{e:?}"))
@@ -278,15 +277,14 @@ pub fn get_hierarchy_from_server(
         if let Err(e) = sender.send(msg) {
             error!("Failed to send message: {e}");
         }
-    };
-    spawn!(task);
+    })
 }
 
 pub fn get_time_table_from_server(sender: Sender<Message>, server: String, file_index: usize) {
     let start = web_time::Instant::now();
     let source = WaveSource::Url(server.clone());
 
-    let task = async move {
+    perform_async_work(async move {
         let res = get_time_table(server.clone(), file_index)
             .await
             .map_err(|e| anyhow!("{e:?}"))
@@ -299,13 +297,12 @@ pub fn get_time_table_from_server(sender: Sender<Message>, server: String, file_
         if let Err(e) = sender.send(msg) {
             error!("Failed to send message: {e}");
         }
-    };
-    spawn!(task);
+    })
 }
 
 pub fn get_server_status(sender: Sender<Message>, server: String, delay_ms: u64) {
     let start = web_time::Instant::now();
-    let task = async move {
+    perform_async_work(async move {
         sleep_ms(delay_ms).await;
         let res = get_status(server.clone())
             .await
@@ -313,14 +310,13 @@ pub fn get_server_status(sender: Sender<Message>, server: String, delay_ms: u64)
             .with_context(|| format!("Failed to retrieve status from remote server {server}"));
 
         let msg = match res {
-            Ok(status) => Message::SurferServerStatus(start, server, status),
+            Ok(status) => Message::SetSurverStatus(start, server, status),
             Err(e) => Message::Error(e),
         };
         if let Err(e) = sender.send(msg) {
             error!("Failed to send message: {e}");
         }
-    };
-    spawn!(task);
+    })
 }
 
 pub fn server_reload(
@@ -330,14 +326,14 @@ pub fn server_reload(
     file_index: usize,
 ) {
     let start = web_time::Instant::now();
-    let task = async move {
+    perform_async_work(async move {
         let res = reload(server.clone(), file_index).await;
         let mut request_hierarchy = false;
 
         let msg = match res {
             Ok(status) => {
                 request_hierarchy = true;
-                Message::SurferServerStatus(start, server.clone(), status)
+                Message::SetSurverStatus(start, server.clone(), status)
             }
             Err(crate::remote::ReloadError::FileUnchanged) => Message::StopProgressTracker,
             Err(e) => {
@@ -351,8 +347,7 @@ pub fn server_reload(
         if request_hierarchy {
             get_hierarchy_from_server(sender, server, load_options, file_index);
         }
-    };
-    spawn!(task);
+    })
 }
 
 mod tests {

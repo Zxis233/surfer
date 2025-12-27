@@ -133,7 +133,7 @@ mod main_impl {
             let bind_addr = bind_address.unwrap_or(config.server.bind_address);
             let port = port.unwrap_or(config.server.port);
 
-            let res = runtime.block_on(surver::server_main(port, bind_addr, token, &[file], None));
+            let res = runtime.block_on(surver::surver_main(port, bind_addr, token, &[file], None));
             return res;
         }
 
@@ -228,10 +228,10 @@ mod main_impl {
     fn panic_handler(info: &std::panic::PanicHookInfo) {
         let backtrace = std::backtrace::Backtrace::force_capture();
 
-        eprintln!("");
+        eprintln!();
         eprintln!("Surfer crashed due to a panic 😞");
         eprintln!("Please report this issue at https://gitlab.com/surfer-project/surfer/-/issues");
-        eprintln!("");
+        eprintln!();
         eprintln!("Some notes on reports:");
         eprintln!(
             "We are happy about any reports, but it makes it much easier for us to fix issues if you:",
@@ -240,7 +240,7 @@ mod main_impl {
         eprintln!(" - Try to reproduce the issue to give us steps on how to reproduce the issue");
         eprintln!(" - Include (minimal) waveform file and state file you used");
         eprintln!("   (you can upload those confidentially, for the surfer team only)");
-        eprintln!("");
+        eprintln!();
 
         let location = info.location().unwrap();
         let msg = if let Some(msg) = info.payload().downcast_ref::<&str>() {
@@ -265,7 +265,7 @@ mod main_impl {
             location.column(),
         );
         eprintln!("  {}", msg);
-        eprintln!("");
+        eprintln!();
         eprintln!("backtrace:");
         eprintln!("{}", backtrace);
     }
@@ -305,12 +305,16 @@ mod main_impl {
 mod main_impl {
     use eframe::wasm_bindgen::JsCast;
     use eframe::web_sys;
+    use libsurfer::logs;
     use libsurfer::wasm_api::WebHandle;
 
     // Calling main is not the intended way to start surfer, instead, it should be
     // started by `wasm_api::WebHandle`
     pub(crate) fn main() -> eyre::Result<()> {
         simple_eyre::install()?;
+
+        logs::start_logging()?;
+
         let document = web_sys::window()
             .expect("No window")
             .document()
