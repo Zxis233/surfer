@@ -93,13 +93,13 @@ impl ScopeRefExt for ScopeRef {
     }
 
     fn from_strs_with_id(s: &[impl ToString], id: ScopeId) -> Self {
-        let strs = s.iter().map(std::string::ToString::to_string).collect();
+        let strs = s.iter().map(ToString::to_string).collect();
         Self { strs, id }
     }
 
     /// Creates a `ScopeRef` from a string with each scope separated by `.`
     fn from_hierarchy_string(s: &str) -> Self {
-        let strs = s.split('.').map(std::string::ToString::to_string).collect();
+        let strs = s.split('.').map(ToString::to_string).collect();
         let id = ScopeId::default();
         Self { strs, id }
     }
@@ -146,10 +146,7 @@ impl VariableRefExt for VariableRef {
     }
 
     fn from_hierarchy_string(s: &str) -> Self {
-        let components = s
-            .split('.')
-            .map(std::string::ToString::to_string)
-            .collect::<Vec<_>>();
+        let components = s.split('.').map(ToString::to_string).collect::<Vec<_>>();
 
         if components.is_empty() {
             Self {
@@ -162,6 +159,27 @@ impl VariableRefExt for VariableRef {
                 path: ScopeRef::from_strs(&components[..(components.len()) - 1]),
                 name: components.last().unwrap().to_string(),
                 id: VarId::default(),
+            }
+        }
+    }
+
+    fn from_hierarchy_string_with_id(s: &str, id: VarId) -> Self {
+        let components = s
+            .split('.')
+            .map(std::string::ToString::to_string)
+            .collect::<Vec<_>>();
+
+        if components.is_empty() {
+            Self {
+                path: ScopeRef::empty(),
+                name: String::new(),
+                id,
+            }
+        } else {
+            Self {
+                path: ScopeRef::from_strs(&components[..(components.len()) - 1]),
+                name: components.last().unwrap().to_string(),
+                id,
             }
         }
     }
@@ -187,10 +205,7 @@ impl VariableRefExt for VariableRef {
     fn from_strs(s: &[&str]) -> Self {
         Self {
             path: ScopeRef::from_strs(&s[..(s.len() - 1)]),
-            name: s
-                .last()
-                .expect("from_strs called with an empty string")
-                .to_string(),
+            name: (*s.last().expect("from_strs called with an empty string")).to_string(),
             id: VarId::default(),
         }
     }
@@ -216,7 +231,7 @@ impl FieldRefExt for FieldRef {
     fn from_strs(root: &[&str], field: &[&str]) -> Self {
         Self {
             root: VariableRef::from_strs(root),
-            field: field.iter().map(std::string::ToString::to_string).collect(),
+            field: field.iter().map(ToString::to_string).collect(),
         }
     }
 }
@@ -298,9 +313,9 @@ impl WaveContainer {
 
     /// Return all variables (excluding parameters) in the whole design.
     #[must_use]
-    pub fn variables(&self, include_parameters: bool) -> Vec<VariableRef> {
+    pub fn variables(&self) -> Vec<VariableRef> {
         match self {
-            WaveContainer::Wellen(f) => f.variables(include_parameters),
+            WaveContainer::Wellen(f) => f.variables(),
             WaveContainer::Empty => vec![],
             WaveContainer::Cxxrtl(_) => vec![],
         }

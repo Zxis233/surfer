@@ -571,7 +571,7 @@ impl SurferTheme {
     }
 
     fn generate_defaults(
-        theme_name: &Option<String>,
+        theme_name: Option<&String>,
     ) -> (ConfigBuilder<DefaultState>, Vec<String>) {
         let default_theme = String::from(include_str!("../../default_theme.toml"));
 
@@ -598,7 +598,7 @@ impl SurferTheme {
     pub fn new(theme_name: Option<String>) -> Result<Self> {
         use eyre::anyhow;
 
-        let (theme, _) = Self::generate_defaults(&theme_name);
+        let (theme, _) = Self::generate_defaults(theme_name.as_ref());
 
         let theme = theme.set_override("theme_names", all_theme_names())?;
 
@@ -614,7 +614,7 @@ impl SurferTheme {
 
         use eyre::anyhow;
 
-        let (mut theme, mut theme_names) = Self::generate_defaults(&theme_name);
+        let (mut theme, mut theme_names) = Self::generate_defaults(theme_name.as_ref());
 
         let mut add_themes_from_dir = |dir: ReadDir| {
             for theme in dir.flatten() {
@@ -729,8 +729,8 @@ fn default_colors() -> HashMap<String, Color32> {
     .iter()
     .map(|(name, hexcode)| {
         (
-            name.to_string(),
-            hex_string_to_color32(hexcode.to_string()).unwrap(),
+            (*name).to_string(),
+            hex_string_to_color32((*hexcode).to_string()).unwrap(),
         )
     })
     .collect()
@@ -817,15 +817,12 @@ fn hex_string_to_color32(mut str: String) -> Result<Color32> {
             .with_context(|| format!("'{str}' is not a valid RGB hex color"))?;
         Ok(Color32::from_rgb(r, g, b))
     } else {
-        eyre::Result::Err(Report::msg(format!("'{str}' is not a valid RGB hex color")))
+        Result::Err(Report::msg(format!("'{str}' is not a valid RGB hex color")))
     }
 }
 
 fn all_theme_names() -> Vec<String> {
-    BUILTIN_THEMES
-        .keys()
-        .map(std::string::ToString::to_string)
-        .collect()
+    BUILTIN_THEMES.keys().map(ToString::to_string).collect()
 }
 
 fn deserialize_hex_color<'de, D>(deserializer: D) -> Result<Color32, D::Error>

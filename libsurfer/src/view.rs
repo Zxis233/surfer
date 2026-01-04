@@ -1,5 +1,5 @@
 use crate::{
-    config::TransitionValue,
+    config::{ThemeColorPair, TransitionValue},
     dialog::{draw_open_sibling_state_file_dialog, draw_reload_waveform_dialog},
     displayed_item::DisplayedVariable,
     fzcmd::expand_command,
@@ -43,7 +43,7 @@ use crate::time::time_string;
 use crate::transaction_container::TransactionStreamRef;
 use crate::translation::TranslationResultExt;
 use crate::util::get_alpha_focus_id;
-use crate::wave_container::{FieldRef, FieldRefExt, VariableRef, WaveContainer};
+use crate::wave_container::{FieldRef, FieldRefExt, VariableRef};
 use crate::{
     Message, MoveDir, SystemState, command_prompt::show_command_prompt, hierarchy::HierarchyStyle,
     wave_data::WaveData,
@@ -203,6 +203,12 @@ impl eframe::App for SystemState {
         self.timing.borrow_mut().end("draw");
 
         #[cfg(feature = "performance_plot")]
+        self.timing.borrow_mut().start("push_async_messages");
+        self.push_async_messages(&mut msgs);
+        #[cfg(feature = "performance_plot")]
+        self.timing.borrow_mut().end("push_async_messages");
+
+        #[cfg(feature = "performance_plot")]
         self.timing.borrow_mut().start("update");
         let ui_zoom_factor = self.ui_zoom_factor();
         if ctx.zoom_factor() != ui_zoom_factor {
@@ -224,12 +230,6 @@ impl eframe::App for SystemState {
         }
         #[cfg(feature = "performance_plot")]
         self.timing.borrow_mut().end("update");
-
-        #[cfg(feature = "performance_plot")]
-        self.timing.borrow_mut().start("handle_async_messages");
-        self.handle_async_messages();
-        #[cfg(feature = "performance_plot")]
-        self.timing.borrow_mut().end("handle_async_messages");
 
         self.handle_batch_commands();
         #[cfg(target_arch = "wasm32")]
@@ -800,11 +800,7 @@ impl SystemState {
     }
 
     fn get_name_alignment(&self) -> Align {
-        if self
-            .user
-            .align_names_right
-            .unwrap_or_else(|| self.user.config.layout.align_names_right())
-        {
+        if self.align_names_right() {
             Align::RIGHT
         } else {
             Align::LEFT
@@ -853,6 +849,7 @@ impl SystemState {
         msgs: &mut Vec<Message>,
         ui: &mut Ui,
         ctx: &egui::Context,
+        meta: Option<&VariableMeta>,
     ) -> egui::Response {
         let mut variable_label = self.draw_item_label(
             vidx,
@@ -862,20 +859,26 @@ impl SystemState {
             msgs,
             ui,
             ctx,
+            meta,
         );
 
         if self.show_tooltip() {
             variable_label = variable_label.on_hover_ui(|ui| {
-                let tooltip = if let Some(waves) = &self.user.waves {
+                let tooltip = if self.user.waves.is_some() {
                     if field.field.is_empty() {
-                        let wave_container = waves.inner.as_waves().unwrap();
-                        let meta = wave_container.variable_meta(&field.root).ok();
-                        variable_tooltip_text(meta.as_ref(), &field.root)
+                        if let Some(meta) = meta {
+                            variable_tooltip_text(Some(meta), &field.root)
+                        } else {
+                            let wave_container =
+                                self.user.waves.as_ref().unwrap().inner.as_waves().unwrap();
+                            let meta = wave_container.variable_meta(&field.root).ok();
+                            variable_tooltip_text(meta.as_ref(), &field.root)
+                        }
                     } else {
                         "From translator".to_string()
                     }
                 } else {
-                    "No VCD loaded".to_string()
+                    "No waveform loaded".to_string()
                 };
                 ui.set_max_width(ui.spacing().tooltip_width);
                 ui.add(egui::Label::new(tooltip));
@@ -931,6 +934,7 @@ impl SystemState {
                                             msgs,
                                             ui,
                                             ctx,
+                                            None,
                                         )
                                     },
                                 );
@@ -986,6 +990,7 @@ impl SystemState {
                             msgs,
                             ui,
                             ctx,
+                            None,
                         )
                     })
                     .inner;
@@ -1102,40 +1107,36 @@ impl SystemState {
         msgs: &mut Vec<Message>,
         ui: &mut Ui,
         ctx: &egui::Context,
+        meta: Option<&VariableMeta>,
     ) -> egui::Response {
-        let text_color = {
-            let style = ui.style_mut();
+        let color_pair = {
             if self.item_is_focused(vidx) {
-                style.visuals.selection.bg_fill = self.user.config.theme.accent_info.background;
-                self.user.config.theme.accent_info.foreground
+                &self.user.config.theme.accent_info
             } else if self.item_is_selected(displayed_id) {
-                style.visuals.selection.bg_fill =
-                    self.user.config.theme.selected_elements_colors.background;
-                self.user.config.theme.selected_elements_colors.foreground
+                &self.user.config.theme.selected_elements_colors
             } else if matches!(
                 displayed_item,
                 DisplayedItem::Variable(_) | DisplayedItem::Placeholder(_)
             ) {
-                style.visuals.selection.bg_fill =
-                    self.user.config.theme.primary_ui_color.background;
-                self.user.config.theme.primary_ui_color.foreground
+                &self.user.config.theme.primary_ui_color
             } else {
-                style.visuals.selection.bg_fill =
-                    self.user.config.theme.primary_ui_color.background;
-                self.get_item_text_color(displayed_item)
+                &ThemeColorPair {
+                    background: self.user.config.theme.primary_ui_color.background,
+                    foreground: self.get_item_text_color(displayed_item),
+                }
             }
         };
-
-        let available_space = ui.available_width();
+        {
+            let style = ui.style_mut();
+            style.visuals.selection.bg_fill = color_pair.background;
+        }
 
         let mut layout_job = LayoutJob::default();
         match displayed_item {
             DisplayedItem::Variable(var) if field.is_some() => {
                 let field = field.unwrap();
                 if field.field.is_empty() {
-                    let wave_container =
-                        self.user.waves.as_ref().unwrap().inner.as_waves().unwrap();
-                    let name_info = self.get_variable_name_info(wave_container, &var.variable_ref);
+                    let name_info = self.get_variable_name_info(&var.variable_ref, meta);
 
                     if let Some(true_name) = name_info.and_then(|info| info.true_name) {
                         let monospace_font =
@@ -1152,17 +1153,19 @@ impl SystemState {
                                     .x
                             })
                         };
+                        let available_width = ui.available_width();
+
                         draw_true_name(
                             &true_name,
                             &mut layout_job,
                             monospace_font.clone(),
-                            text_color,
+                            color_pair.foreground,
                             monospace_width,
-                            available_space,
+                            available_width,
                         );
                     } else {
                         displayed_item.add_to_layout_job(
-                            &text_color,
+                            color_pair.foreground,
                             ui.style(),
                             &mut layout_job,
                             Some(field),
@@ -1171,7 +1174,7 @@ impl SystemState {
                     }
                 } else {
                     RichText::new(field.field.last().unwrap().clone())
-                        .color(text_color)
+                        .color(color_pair.foreground)
                         .line_height(Some(self.user.config.layout.waveforms_line_height))
                         .append_to(
                             &mut layout_job,
@@ -1182,7 +1185,7 @@ impl SystemState {
                 }
             }
             _ => displayed_item.add_to_layout_job(
-                &text_color,
+                color_pair.foreground,
                 ui.style(),
                 &mut layout_job,
                 field,
@@ -1237,7 +1240,16 @@ impl SystemState {
         ui: &mut Ui,
         ctx: &egui::Context,
     ) -> Rect {
-        let label = self.draw_item_label(vidx, displayed_id, displayed_item, None, msgs, ui, ctx);
+        let label = self.draw_item_label(
+            vidx,
+            displayed_id,
+            displayed_item,
+            None,
+            msgs,
+            ui,
+            ctx,
+            None,
+        );
 
         self.draw_drag_source(msgs, vidx, &label, ui.ctx().input(|e| e.modifiers));
         match displayed_item {
@@ -1360,7 +1372,6 @@ impl SystemState {
                 .sorted_by_key(|o| o.top() as i32)
                 .enumerate()
             {
-                let vidx = drawing_info.vidx();
                 let next_y = ui.cursor().top();
                 // In order to align the text in this view with the variable tree,
                 // we need to keep track of how far away from the expected offset we are,
@@ -1370,7 +1381,7 @@ impl SystemState {
                 }
 
                 let backgroundcolor =
-                    self.get_background_color(waves, drawing_info, vidx, item_count);
+                    self.get_background_color(waves, drawing_info.vidx(), item_count);
                 self.draw_background(
                     drawing_info,
                     y_zero,
@@ -1408,7 +1419,7 @@ impl SystemState {
                                     )),
                                     msgs,
                                     ui,
-                                    vidx,
+                                    drawing_info.vidx,
                                 );
                             });
                         }
@@ -1427,7 +1438,7 @@ impl SystemState {
                                 self.user.config.theme.get_best_text_color(backgroundcolor),
                             ))
                             .context_menu(|ui| {
-                                self.item_context_menu(None, msgs, ui, vidx);
+                                self.item_context_menu(None, msgs, ui, drawing_info.vidx());
                             });
                         } else {
                             ui.label("");
@@ -1460,14 +1471,17 @@ impl SystemState {
         };
 
         let variable = &displayed_variable.variable_ref;
-        let translator =
-            waves.variable_translator(&displayed_field_ref.without_field(), &self.translators);
         let meta = waves
             .inner
             .as_waves()
             .unwrap()
             .variable_meta(variable)
             .ok()?;
+        let translator = waves.variable_translator_with_meta(
+            &displayed_field_ref.without_field(),
+            &self.translators,
+            &meta,
+        );
 
         let wave_container = waves.inner.as_waves().unwrap();
         let query_result = wave_container
@@ -1547,11 +1561,9 @@ impl SystemState {
 
     pub fn get_variable_name_info(
         &self,
-        wave_container: &WaveContainer,
         var: &VariableRef,
+        meta: Option<&VariableMeta>,
     ) -> Option<VariableNameInfo> {
-        let meta = wave_container.variable_meta(var).ok();
-
         self.variable_name_info_cache
             .borrow_mut()
             .entry(var.clone())
@@ -1585,7 +1597,6 @@ impl SystemState {
     pub fn get_background_color(
         &self,
         waves: &WaveData,
-        drawing_info: &ItemDrawingInfo,
         vidx: VisibleItemIndex,
         item_count: usize,
     ) -> Color32 {
@@ -1597,13 +1608,7 @@ impl SystemState {
         }
         waves
             .displayed_items
-            .get(
-                &waves
-                    .items_tree
-                    .get_visible(drawing_info.vidx())
-                    .unwrap()
-                    .item_ref,
-            )
+            .get(&waves.items_tree.get_visible(vidx).unwrap().item_ref)
             .and_then(super::displayed_item::DisplayedItem::background_color)
             .and_then(|color| self.user.config.theme.get_color(color))
             .unwrap_or_else(|| self.get_default_alternating_background_color(item_count))

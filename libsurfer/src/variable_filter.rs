@@ -123,7 +123,7 @@ impl VariableFilter {
                 VariableNameFilterType::Regex => filter_str.clone(),
                 VariableNameFilterType::Start => format!("^{}", escape(&filter_str)),
                 VariableNameFilterType::Contain => escape(&filter_str),
-                _ => unreachable!(),
+                VariableNameFilterType::Fuzzy => unreachable!(),
             };
             let rebuild = (cache.regex_pattern.as_ref() != Some(&pat))
                 || cache.regex_case_insensitive != case_insensitive
@@ -314,7 +314,7 @@ impl SystemState {
     fn add_filtered_variables(&mut self, msgs: &mut Vec<Message>, full_path: bool) {
         if let Some(waves) = self.user.waves.as_ref() {
             if full_path {
-                let variables = waves.inner.as_waves().unwrap().variables(false);
+                let variables = waves.inner.as_waves().unwrap().variables();
                 msgs.push(Message::AddVariables(
                     self.filtered_variables(&variables, false),
                 ));

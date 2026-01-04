@@ -17,7 +17,6 @@ use wellen::{
 use crate::time::{TimeScale, TimeUnit};
 use crate::variable_direction::VariableDirectionExt;
 use crate::variable_index::VariableIndexExt;
-use crate::variable_type::VariableTypeExt;
 use crate::wave_container::{
     MetaData, QueryResult, ScopeId, ScopeRef, ScopeRefExt, VarId, VariableMeta, VariableRef,
     VariableRefExt,
@@ -33,6 +32,7 @@ pub struct WellenContainer {
     server: Option<String>,
     scopes: Vec<String>,
     vars: Vec<String>,
+    varrefs: Vec<VariableRef>,
     signals: HashMap<SignalRef, Arc<Signal>>,
     /// keeps track of signals that need to be loaded once the body of the waveform file has been loaded
     signals_to_be_loaded: HashSet<SignalRef>,
@@ -138,6 +138,20 @@ impl WellenContainer {
         let h = &hierarchy;
         let scopes = h.iter_scopes().map(|r| r.full_name(h)).collect::<Vec<_>>();
         let vars: Vec<String> = h.iter_vars().map(|r| r.full_name(h)).collect::<Vec<_>>();
+        let varrefs = vars
+            .iter()
+            .enumerate()
+            .filter_map(|(n, name)| {
+                let r = VarRef::from_index(n).unwrap();
+                if h[r].var_type().is_parameter() {
+                    return None;
+                }
+                Some(VariableRef::from_hierarchy_string_with_id(
+                    name,
+                    VarId::Wellen(r),
+                ))
+            })
+            .collect::<Vec<_>>();
 
         let unique_id = UNIQUE_ID_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
@@ -146,6 +160,7 @@ impl WellenContainer {
             server,
             scopes,
             vars,
+            varrefs,
             signals: HashMap::new(),
             signals_to_be_loaded: HashSet::new(),
             time_table: Arc::new(vec![]),
@@ -239,18 +254,8 @@ impl WellenContainer {
     }
 
     #[must_use]
-    pub fn variables(&self, include_parameters: bool) -> Vec<VariableRef> {
-        let h = &self.hierarchy;
-        if include_parameters {
-            h.iter_vars()
-                .map(|r| VariableRef::from_hierarchy_string(&r.full_name(h)))
-                .collect::<Vec<_>>()
-        } else {
-            h.iter_vars()
-                .filter(|id| id.var_type() != VarType::Parameter)
-                .map(|r| VariableRef::from_hierarchy_string(&r.full_name(h)))
-                .collect::<Vec<_>>()
-        }
+    pub fn variables(&self) -> Vec<VariableRef> {
+        self.varrefs.clone()
     }
 
     pub fn variables_in_scope(&self, scope_ref: &ScopeRef) -> Vec<VariableRef> {
@@ -258,7 +263,7 @@ impl WellenContainer {
         // special case of an empty scope means that we want to variables that are part of the toplevel
         if scope_ref.has_empty_strs() {
             h.vars()
-                .filter(|id| h[*id].var_type() != VarType::Parameter)
+                .filter(|id| !h[*id].var_type().is_parameter())
                 .map(|id| {
                     VariableRef::new_with_id(
                         scope_ref.clone(),
@@ -276,7 +281,7 @@ impl WellenContainer {
             };
             scope
                 .vars(h)
-                .filter(|id| h[*id].var_type() != VarType::Parameter)
+                .filter(|id| !h[*id].var_type().is_parameter())
                 .map(|id| {
                     VariableRef::new_with_id(
                         scope_ref.clone(),
@@ -293,7 +298,7 @@ impl WellenContainer {
         // special case of an empty scope means that we want to variables that are part of the toplevel
         if scope_ref.strs().is_empty() {
             h.vars()
-                .filter(|id| h[*id].var_type() == VarType::Parameter)
+                .filter(|id| h[*id].var_type().is_parameter())
                 .map(|id| {
                     VariableRef::new_with_id(
                         scope_ref.clone(),
@@ -311,7 +316,7 @@ impl WellenContainer {
             };
             scope
                 .vars(h)
-                .filter(|id| h[*id].var_type() == VarType::Parameter)
+                .filter(|id| h[*id].var_type().is_parameter())
                 .map(|id| {
                     VariableRef::new_with_id(
                         scope_ref.clone(),
@@ -410,7 +415,7 @@ impl WellenContainer {
         let h = &self.hierarchy;
         let params = h
             .iter_vars()
-            .filter(|r| r.var_type() == VarType::Parameter)
+            .filter(|r| r.var_type().is_parameter())
             .map(wellen::Var::signal_ref)
             .collect::<Vec<_>>();
         Ok(self.load_signals(&params))
@@ -618,9 +623,7 @@ impl WellenContainer {
             var: variable.clone(),
             num_bits: var.length(),
             variable_type: Some(VariableType::from_wellen_type(var.var_type())),
-            variable_type_name: var
-                .vhdl_type_name(&self.hierarchy)
-                .map(std::string::ToString::to_string),
+            variable_type_name: var.vhdl_type_name(&self.hierarchy).map(ToString::to_string),
             index: var.index().map(VariableIndex::from_wellen_type),
             direction: Some(VariableDirection::from_wellen_direction(var.direction())),
             enum_map: self.get_enum_map(var),
@@ -734,7 +737,7 @@ fn convert_variable_value(value: wellen::SignalValue) -> VariableValue {
 
 #[local_impl::local_impl]
 impl FromVarType for VariableType {
-    fn from(signaltype: VarType) -> Self {
+    fn from_wellen_type(signaltype: VarType) -> Self {
         match signaltype {
             VarType::Reg => VariableType::VCDReg,
             VarType::Wire => VariableType::VCDWire,
@@ -773,6 +776,13 @@ impl FromVarType for VariableType {
             VarType::StdULogicVector => VariableType::StdULogicVector,
             VarType::RealParameter => VariableType::RealParameter,
         }
+    }
+}
+
+#[local_impl::local_impl]
+impl VarTypeExt for VarType {
+    fn is_parameter(&self) -> bool {
+        matches!(self, VarType::Parameter | VarType::RealParameter)
     }
 }
 
