@@ -12,5 +12,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .add_instructions(&build)?
         .add_instructions(&git)?
         .emit()?;
+
+    // Set the application icon for Windows builds
+    #[cfg(windows)]
+    {
+        let mut res = winres::WindowsResource::new();
+        res.set_icon("assets/surfer.ico");
+        res.compile()?;
+    }
+
     Ok(())
 }
