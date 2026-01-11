@@ -5054,6 +5054,7 @@ dependencies = [
  "tracing",
  "vergen-gitcl",
  "wasm-bindgen-futures",
+ "winres",
 ]
 
 [[package]]
