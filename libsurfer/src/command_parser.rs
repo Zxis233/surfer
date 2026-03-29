@@ -269,7 +269,8 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "item_rename",
             "zoom_fit",
             "scope_add",
-            "download",
+            #[cfg(not(target_arch = "wasm32"))]
+            "create",
             "scope_add_recursive",
             "scope_add_as_group",
             "scope_add_as_group_recursive",
@@ -366,7 +367,8 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "show_mouse_gestures",
             "show_quick_start",
             "show_logs",
-            "download",
+            #[cfg(not(target_arch = "wasm32"))]
+            "create",
             #[cfg(feature = "performance_plot")]
             "show_performance",
             #[cfg(not(target_arch = "wasm32"))]
@@ -406,11 +408,13 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                     }),
                 ),
 
-                "download" => Some(Command::NonTerminal(
+                "create" => Some(Command::NonTerminal(
                     ParamGreed::Word,
-                    vec!["config".into()],
+                    vec!["default-config".into()],
                     Box::new(|query, _| {
-                        if query == "config" {
+                        let query = query.trim();
+
+                        if query == "default-config" {
                             Some(Command::Terminal(Message::DownloadDefaultConfig))
                         } else {
                             None
