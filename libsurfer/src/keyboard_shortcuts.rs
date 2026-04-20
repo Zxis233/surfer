@@ -373,14 +373,14 @@ impl SurferShortcuts {
             ShortcutAction::ZoomIn => {
                 msgs.push(Message::CanvasZoom {
                     mouse_ptr: None,
-                    delta: 0.5,
+                    delta: 2.0,
                     viewport_idx: 0,
                 });
             }
             ShortcutAction::ZoomOut => {
                 msgs.push(Message::CanvasZoom {
                     mouse_ptr: None,
-                    delta: 2.0,
+                    delta: 0.5,
                     viewport_idx: 0,
                 });
             }

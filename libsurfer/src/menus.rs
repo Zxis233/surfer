@@ -24,6 +24,7 @@ use crate::{
     file_dialog::OpenMode,
     message::Message,
     time::{timeformat_menu, timeunit_menu},
+    toolbar::toolbar_group_specs,
     variable_name_type::VariableNameType,
 };
 use surfer_wcp::{WcpEvent, WcpSCMessage};
@@ -337,6 +338,17 @@ impl SystemState {
                     )
                     .clicked()
                     .then(|| msgs.push(Message::SetUIZoomFactor(*scale)));
+                }
+            });
+            ui.menu_button("Toolbar groups", |ui| {
+                for spec in toolbar_group_specs() {
+                    let mut enabled = self.toolbar_group_enabled(spec.id);
+                    if ui.checkbox(&mut enabled, spec.label).changed() {
+                        msgs.push(Message::SetToolbarGroupEnabled(
+                            spec.id.to_string(),
+                            enabled,
+                        ));
+                    }
                 }
             });
         });

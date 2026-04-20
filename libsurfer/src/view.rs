@@ -284,6 +284,12 @@ impl eframe::App for SystemState {
 
         #[cfg(feature = "performance_plot")]
         self.timing.borrow_mut().end_frame();
+
+        // Must be last: override cursor after all rendering so nothing can overwrite it.
+        if self.toolbar_dragging_group.is_some() {
+            ui.ctx()
+                .output_mut(|o| o.cursor_icon = egui::CursorIcon::Grabbing);
+        }
     }
 }
 

@@ -134,7 +134,6 @@ impl Translator<VarId, ScopeId, Message> for AnyTranslator {
             AnyTranslator::Full(t) => t.variable_info(variable),
             AnyTranslator::Basic(t) => t.variable_info(variable),
             #[cfg(feature = "python")]
-            #[cfg(target_family = "unix")]
             AnyTranslator::Python(t) => t.variable_info(variable),
         }
     }

@@ -731,9 +731,7 @@ impl SystemState {
         ui.horizontal(|ui| {
             // Acquire or create the TimeInputState for this id
             let mut widgets = self.time_widgets.borrow_mut();
-            let state = widgets
-                .entry(id_prefix.to_string())
-                .or_insert_with(TimeInputState::default);
+            let state = widgets.entry(id_prefix.to_string()).or_default();
 
             let on_commit = |time_stamp: BigInt| {
                 // This closure captures the provided id_prefix and can be used for both buttons

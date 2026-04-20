@@ -50,6 +50,34 @@ fill_high_values = true
 trace_style = "Default"
 transition_value = "Next"
 
+[layout.toolbar.row]
+menu = 0
+files = 0
+copy = 0
+zoom = 0
+navigation = 0
+transitions = 0
+add_items = 0
+viewports = 0
+undo = 0
+cxxrtl = 0
+time = 0
+annotations = 0
+
+[layout.toolbar.visibility]
+menu = true
+files = true
+copy = true
+zoom = true
+navigation = true
+transitions = true
+add_items = true
+viewports = true
+undo = true
+cxxrtl = true
+time = true
+annotations = true
+
 [gesture]
 size = 300
 deadzone = 20

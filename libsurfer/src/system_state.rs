@@ -121,6 +121,12 @@ pub struct SystemState {
     pub(crate) undo_stack: Vec<CanvasState>,
     pub(crate) redo_stack: Vec<CanvasState>,
 
+    // Toolbar group drag state
+    pub(crate) toolbar_dragging_group: Option<String>,
+    pub(crate) toolbar_drop_row: Option<usize>,
+    pub(crate) toolbar_drop_index: Option<usize>,
+    pub(crate) toolbar_drop_new_row: bool,
+
     pub(crate) url_callback: Option<Box<dyn Fn(String) -> Message + Send + 'static>>,
 
     // Only used for testing
@@ -200,6 +206,10 @@ impl SystemState {
             annotation_kind: None,
             annotation_id_source: 0,
             click_handled: false,
+            toolbar_dragging_group: None,
+            toolbar_drop_row: None,
+            toolbar_drop_index: None,
+            toolbar_drop_new_row: false,
         };
 
         Ok(result)

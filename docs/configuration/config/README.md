@@ -22,6 +22,14 @@ show_ticks = false
 hierarchy_style = "Tree"
 waveforms_text_size = 12.0
 
+[layout.toolbar.row]
+menu = 0
+time = 1
+
+[layout.toolbar.visibility]
+menu = false
+cxxrtl = false
+
 [behavior]
 arrow_key_bindings = "Scroll"
 primary_button_drag_behavior = "Measure"
@@ -104,6 +112,48 @@ Controls the initial UI layout and waveform rendering behavior.
 | `fill_high_values` | `true` | boolean | Fill the high state in boolean waveforms. |
 | `trace_style` | `"Default"` | `Default`, `Dinotrace`, `Zero` | Digital waveform trace style. `Dinotrace` draws no upper line and a bold lower line for all-zero vectors, and a bold upper line for all-one vectors. `Zero` draws all-zero vectors without the upper line. |
 | `transition_value` | `"Next"` | `Previous`, `Next`, `Both` | Which value to show when the cursor is exactly on a transition. |
+
+The `layout` table also contains toolbar-group subtables under `layout.toolbar`, documented below: `layout.toolbar.row` and `layout.toolbar.visibility`.
+
+### `[layout.toolbar.row]`
+
+Controls the default row assignment for each toolbar group. Each key is a toolbar group id and each value is a row number stored as an unsigned 8-bit integer.
+
+| Key | Default | Values | Description |
+| --- | --- | --- | --- |
+| `menu` | `0` | integer from `0` to `255` | Row for the menu group. |
+| `files` | `0` | integer from `0` to `255` | Row for the file actions group. |
+| `copy` | `0` | integer from `0` to `255` | Row for the copy group. |
+| `zoom` | `0` | integer from `0` to `255` | Row for the zoom group. |
+| `navigation` | `0` | integer from `0` to `255` | Row for the navigation group. |
+| `transitions` | `0` | integer from `0` to `255` | Row for the transition-jump group. |
+| `add_items` | `0` | integer from `0` to `255` | Row for the add-items group. |
+| `viewports` | `0` | integer from `0` to `255` | Row for the viewport group. |
+| `undo` | `0` | integer from `0` to `255` | Row for the undo/redo group. |
+| `cxxrtl` | `0` | integer from `0` to `255` | Row for the CXXRTL simulation controls group. |
+| `time` | `0` | integer from `0` to `255` | Row for the time-input group. |
+| `annotations` | `0` | integer from `0` to `255` | Row for the annotations group. |
+
+### `[layout.toolbar.visibility]`
+
+Controls the default visibility of each toolbar group. These values are only used as defaults; once a state file stores toolbar-group visibility, the state file wins.
+
+| Key | Default | Values | Description |
+| --- | --- | --- | --- |
+| `menu` | `true` | boolean | Show the menu group by default. |
+| `files` | `true` | boolean | Show the file actions group by default. |
+| `copy` | `true` | boolean | Show the copy group by default. |
+| `zoom` | `true` | boolean | Show the zoom group by default. |
+| `navigation` | `true` | boolean | Show the navigation group by default. |
+| `transitions` | `true` | boolean | Show the transition-jump group by default. |
+| `add_items` | `true` | boolean | Show the add-items group by default. |
+| `viewports` | `true` | boolean | Show the viewport group by default. |
+| `undo` | `true` | boolean | Show the undo/redo group by default. |
+| `cxxrtl` | `true` | boolean | Show the CXXRTL simulation controls group by default. |
+| `time` | `true` | boolean | Show the time-input group by default. |
+| `annotations` | `true` | boolean | Show the annotations group by default. |
+
+Note that some of the groups are not shown if no wave is loaded and in some other situations. For example, the menu group is never shown when the regular menu is shown.
 
 ## `[gesture]`
 

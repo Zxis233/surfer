@@ -265,6 +265,19 @@ pub struct SurferLayout {
     trace_style: TraceStyle,
     /// Value to display when cursor is on a transition
     transition_value: TransitionValue,
+    /// Toolbar-specific layout settings
+    #[serde(default)]
+    toolbar: ToolbarLayout,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct ToolbarLayout {
+    /// Default row number for each toolbar group
+    #[serde(default)]
+    row: HashMap<String, u8>,
+    /// Default visibility for each toolbar group
+    #[serde(default)]
+    visibility: HashMap<String, bool>,
 }
 
 impl SurferLayout {
@@ -355,6 +368,14 @@ impl SurferLayout {
     #[must_use]
     pub fn transition_value(&self) -> TransitionValue {
         self.transition_value
+    }
+    #[must_use]
+    pub fn toolbar_group_row(&self, id: &str) -> Option<u8> {
+        self.toolbar.row.get(id).copied()
+    }
+    #[must_use]
+    pub fn toolbar_group_visibility(&self, id: &str) -> Option<bool> {
+        self.toolbar.visibility.get(id).copied()
     }
 }
 

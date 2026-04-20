@@ -223,6 +223,20 @@ Not all commands are available unless a file is loaded. Also, some commands are 
 
   Toggle display of vertical tick lines on the waveform.
 
+* ``toolbar_set_visible <GROUP> <true | false>``
+
+  Set visibility override for a toolbar group.
+
+  ``GROUP`` accepts a group id. Group ids are:
+  ``menu``, ``files``, ``copy``, ``zoom``, ``navigation``, ``transitions``,
+  ``add_items``, ``viewports``, ``undo``, ``cxxrtl``, ``time``, ``annotations``.
+
+* ``toolbar_set_row <GROUP> <ROW>``
+
+  Move a toolbar group to the given row (`ROW` is an unsigned integer from `0` to `255`).
+
+  ``GROUP`` accepts a group id.
+
 * ``variable_set_name_type <Local | Unique | Global>``
 
   Set the name display style for the focused variable.

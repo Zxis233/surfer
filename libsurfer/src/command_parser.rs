@@ -18,6 +18,7 @@ use crate::{
     clock_highlighting::ClockHighlightType,
     displayed_item::DisplayedItem,
     message::Message,
+    toolbar::toolbar_group_specs,
     util::{alpha_idx_to_uint_idx, uint_idx_to_alpha_idx},
     variable_name_type::VariableNameType,
 };
@@ -248,6 +249,10 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
     let _ = wcp_start_or_stop;
 
     let keep_during_reload = state.user.config.behavior.keep_during_reload;
+    let toolbar_group_ids = toolbar_group_specs()
+        .iter()
+        .map(|spec| spec.id.to_string())
+        .collect_vec();
     let mut commands = if state.user.waves.is_some() {
         vec![
             "load_file",
@@ -301,6 +306,8 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "toggle_side_panel",
             "toggle_fullscreen",
             "toggle_tick_lines",
+            "toolbar_set_visible",
+            "toolbar_set_row",
             "variable_add_from_scope",
             "generator_add_from_stream",
             "variable_set_name_type",
@@ -360,6 +367,8 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "toggle_menu",
             "toggle_side_panel",
             "toggle_fullscreen",
+            "toolbar_set_visible",
+            "toolbar_set_row",
             "preference_set_clock_highlight",
             "preference_set_hierarchy_style",
             "preference_set_arrow_key_bindings",
@@ -539,6 +548,58 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                 "toggle_tick_lines" => {
                     Some(Command::Terminal(Message::SetTickLines(!show_tick_lines)))
                 }
+                "toolbar_set_visible" => Some(Command::NonTerminal(
+                    ParamGreed::Word,
+                    toolbar_group_ids.clone(),
+                    Box::new({
+                        let toolbar_group_ids = toolbar_group_ids.clone();
+                        move |word, _| {
+                            if !toolbar_group_ids.iter().any(|id| id == word) {
+                                return None;
+                            }
+                            let group_id = word.to_string();
+                            Some(Command::NonTerminal(
+                                ParamGreed::Word,
+                                vec!["true".to_string(), "false".to_string()],
+                                Box::new(move |value, _| {
+                                    let enabled = match value {
+                                        "true" => true,
+                                        "false" => false,
+                                        _ => return None,
+                                    };
+                                    Some(Command::Terminal(Message::SetToolbarGroupEnabled(
+                                        group_id.clone(),
+                                        enabled,
+                                    )))
+                                }),
+                            ))
+                        }
+                    }),
+                )),
+                "toolbar_set_row" => Some(Command::NonTerminal(
+                    ParamGreed::Word,
+                    toolbar_group_ids.clone(),
+                    Box::new({
+                        let toolbar_group_ids = toolbar_group_ids.clone();
+                        move |word, _| {
+                            if !toolbar_group_ids.iter().any(|id| id == word) {
+                                return None;
+                            }
+                            let group_id = word.to_string();
+                            Some(Command::NonTerminal(
+                                ParamGreed::Word,
+                                vec![],
+                                Box::new(move |value, _| {
+                                    let row = value.parse::<u8>().ok()?;
+                                    Some(Command::Terminal(Message::SetToolbarGroupRow(
+                                        group_id.clone(),
+                                        row,
+                                    )))
+                                }),
+                            ))
+                        }
+                    }),
+                )),
                 // scope commands
                 "scope_add" | "module_add" | "stream_add" | "scope_add_recursive" => {
                     let recursive = query == "scope_add_recursive";
