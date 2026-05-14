@@ -12,6 +12,7 @@ use crate::displayed_item_tree::VisibleItemIndex;
 use crate::hierarchy::{HierarchyStyle, ParameterDisplayLocation, ScopeExpandType};
 use crate::keyboard_shortcuts::ShortcutAction;
 use crate::message::MessageTarget;
+use crate::trace_style::TraceStyle;
 use crate::wave_container::{FieldRef, VariableRefExt};
 use crate::wave_data::ScopeType;
 use crate::wave_source::LoadOptions;
@@ -491,11 +492,15 @@ impl SystemState {
                 .then(|| {
                     msgs.push(Message::ShowDividerText(!self.show_divider_text()));
                 });
-            ui.radio(self.use_dinotrace_style(), "Dinotrace style")
-                .clicked()
-                .then(|| {
-                    msgs.push(Message::SetDinotraceStyle(!self.use_dinotrace_style()));
-                });
+            ui.menu_button("Trace style", |ui| {
+                for style in enum_iterator::all::<TraceStyle>() {
+                    ui.radio(self.trace_style() == style, style.to_string())
+                        .clicked()
+                        .then(|| {
+                            msgs.push(Message::SetTraceStyle(style));
+                        });
+                }
+            });
         });
         ui.menu_button("Help", |ui| {
             b("Quick start", Message::SetQuickStartVisible(true)).add_closing_menu(msgs, ui);

@@ -29,6 +29,7 @@ use crate::{
     message::MessageTarget,
     setup_custom_font,
     state::UserState,
+    trace_style::TraceStyle,
     transaction_container::{StreamScopeRef, TransactionRef, TransactionStreamRef},
     variable_filter::{VariableIOFilterType, VariableNameFilterType},
     variable_name_type::VariableNameType,
@@ -1966,7 +1967,13 @@ snapshot_ui_with_file_and_msgs! {toggle_high_value_fill, "examples/counter.vcd",
 
 snapshot_ui_with_file_and_msgs! {dinotrace_works, "examples/counter.vcd", [
     Message::AddScope(ScopeRef::from_strs(&["tb", "dut"]), false),
-    Message::SetDinotraceStyle(true),
+    Message::SetTraceStyle(TraceStyle::Dinotrace),
+    Message::ZoomToRange { start: BigInt::from(375), end: BigInt::from(435), viewport_idx: 0 }
+]}
+
+snapshot_ui_with_file_and_msgs! {zero_trace_works, "examples/counter.vcd", [
+    Message::AddScope(ScopeRef::from_strs(&["tb", "dut"]), false),
+    Message::SetTraceStyle(TraceStyle::Zero),
     Message::ZoomToRange { start: BigInt::from(375), end: BigInt::from(435), viewport_idx: 0 }
 ]}
 

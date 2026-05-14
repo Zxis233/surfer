@@ -102,7 +102,7 @@ Controls the initial UI layout and waveform rendering behavior.
 | `highlight_focused` | `false` | boolean | Highlight the waveform of the focused item. |
 | `move_focus_on_inserted_marker` | `true` | boolean | Move focus to newly inserted markers. |
 | `fill_high_values` | `true` | boolean | Fill the high state in boolean waveforms. |
-| `use_dinotrace_style` | `false` | boolean | Use Dinotrace-style digital waveform drawing. This means no upper line and a bold lower line for all zeros vector values and a bold upper line for all ones vector values.|
+| `trace_style` | `"Default"` | `Default`, `Dinotrace`, `Zero` | Digital waveform trace style. `Dinotrace` draws no upper line and a bold lower line for all-zero vectors, and a bold upper line for all-one vectors. `Zero` draws all-zero vectors without the upper line. |
 | `transition_value` | `"Next"` | `Previous`, `Next`, `Both` | Which value to show when the cursor is exactly on a transition. |
 
 ## `[gesture]`

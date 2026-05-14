@@ -17,6 +17,7 @@ use crate::{
     message::Message,
     system_state::SystemState,
     time::{TimeStringFormatting, TimeUnit},
+    trace_style::TraceStyle,
     transaction_container::TransactionContainer,
     variable_filter::VariableFilter,
     viewport::Viewport,
@@ -118,8 +119,10 @@ pub struct UserState {
     pub(crate) ui_zoom_factor: Option<f32>,
     #[serde(default)]
     pub(crate) animation_enabled: Option<bool>,
-    #[serde(default)]
+    #[serde(skip, default)]
     pub(crate) use_dinotrace_style: Option<bool>,
+    #[serde(default)]
+    pub(crate) trace_style: Option<TraceStyle>,
     #[serde(skip, default)]
     pub(crate) show_server_file_window: bool,
     #[serde(skip, default)]
@@ -218,6 +221,7 @@ impl Default for UserState {
             state_file: None,
             animation_enabled: None,
             use_dinotrace_style: None,
+            trace_style: None,
             selected_server_file_index: None,
             show_server_file_window: false,
             surver_file_infos: None,

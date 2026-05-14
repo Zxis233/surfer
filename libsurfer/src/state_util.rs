@@ -9,6 +9,7 @@ use crate::{
     config::{ArrowKeyBindings, AutoLoad, PrimaryMouseDrag, TransitionValue},
     displayed_item::DisplayedItem,
     hierarchy::{HierarchyStyle, ParameterDisplayLocation},
+    trace_style::TraceStyle,
 };
 
 impl SystemState {
@@ -203,10 +204,15 @@ impl SystemState {
     }
 
     #[inline]
-    pub fn use_dinotrace_style(&self) -> bool {
-        self.user
-            .use_dinotrace_style
-            .unwrap_or_else(|| self.user.config.layout.use_dinotrace_style())
+    /// Return the trace style to use, taking into account both the explicit trace style and the deprecated dinotrace style for backwards compatibility.
+    pub fn trace_style(&self) -> TraceStyle {
+        self.user.trace_style.unwrap_or_else(|| {
+            if self.user.use_dinotrace_style == Some(true) {
+                TraceStyle::Dinotrace
+            } else {
+                self.user.config.layout.trace_style()
+            }
+        })
     }
 
     #[inline]

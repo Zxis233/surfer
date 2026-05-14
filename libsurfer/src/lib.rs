@@ -51,6 +51,7 @@ pub mod tests;
 pub mod time;
 pub mod toolbar;
 pub mod tooltips;
+pub mod trace_style;
 pub mod transaction_container;
 pub mod transactions;
 pub mod translation;
@@ -1584,8 +1585,8 @@ impl SystemState {
                 self.invalidate_draw_commands();
             }
             Message::SetFillHighValues(fill) => self.user.fill_high_values = Some(fill),
-            Message::SetDinotraceStyle(dino_style) => {
-                self.user.use_dinotrace_style = Some(dino_style);
+            Message::SetTraceStyle(trace_style) => {
+                self.user.trace_style = Some(trace_style);
                 self.invalidate_draw_commands();
             }
             Message::AddMarker {

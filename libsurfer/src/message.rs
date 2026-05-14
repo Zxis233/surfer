@@ -21,6 +21,7 @@ use crate::graphics::{Graphic, GraphicId, GraphicsY};
 use crate::hierarchy::{ParameterDisplayLocation, ScopeExpandType};
 use crate::mousegestures::AnnotationKind;
 use crate::state::UserState;
+use crate::trace_style::TraceStyle;
 use crate::transaction_container::{
     StreamScopeRef, TransactionContainer, TransactionRef, TransactionStreamRef,
 };
@@ -126,7 +127,7 @@ pub enum Message {
     SetNameAlignRight(bool),
     SetClockHighlightType(ClockHighlightType),
     SetFillHighValues(bool),
-    SetDinotraceStyle(bool),
+    SetTraceStyle(TraceStyle),
     // Reset the translator for this variable back to default. Sub-variables,
     // i.e. those with the variable idx and a shared path are also reset
     ResetVariableFormat(DisplayedFieldRef),

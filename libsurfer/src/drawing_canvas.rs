@@ -6,13 +6,12 @@ use eyre::WrapErr as _;
 use ftr_parser::types::{Transaction, TxGenerator};
 use itertools::Itertools;
 use num::bigint::{ToBigInt, ToBigUint};
-use num::{BigInt, BigUint, ToPrimitive, Zero};
+use num::{BigInt, BigUint, ToPrimitive};
 use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use std::collections::HashMap;
 use std::f32::consts::PI;
 use surfer_translation_types::{
     NumericRange, SubFieldFlatTranslationResult, TranslatedValue, ValueKind, VariableInfo,
-    VariableValue,
 };
 use tracing::{error, warn};
 
@@ -26,6 +25,7 @@ use crate::displayed_item::{
 };
 use crate::time::TimeFormatter;
 use crate::tooltips::handle_transaction_tooltip;
+use crate::trace_style::{TraceStyle, TraceValue};
 use crate::transaction_container::{TransactionRef, TransactionStreamRef};
 use crate::translation::{TranslationResultExt, TranslatorList, ValueKindExt, VariableInfoExt};
 use crate::view::{DrawConfig, DrawingContext, ItemDrawingInfo};
@@ -36,36 +36,13 @@ use crate::{
     displayed_item::DisplayedItem,
 };
 
-/// Information about values to mimic dinotrace's special drawing of all-0 and all-1 values
-#[derive(Clone, Copy)]
-enum DinotraceDrawingStyle {
-    Normal,
-    AllZeros,
-    AllOnes,
-}
-
-impl DinotraceDrawingStyle {
-    fn from_value(val: &VariableValue, num_bits: Option<u32>) -> Self {
-        match val {
-            VariableValue::BigUint(u) if u.is_zero() => DinotraceDrawingStyle::AllZeros,
-            VariableValue::BigUint(u)
-                if num_bits.is_some_and(|bits| u.count_ones() == u64::from(bits)) =>
-            {
-                DinotraceDrawingStyle::AllOnes
-            }
-            VariableValue::BigUint(_) => DinotraceDrawingStyle::Normal,
-            VariableValue::String(_) => DinotraceDrawingStyle::Normal,
-        }
-    }
-}
-
 pub struct DrawnRegion {
     pub inner: Option<TranslatedValue>,
     /// True if a transition should be drawn even if there is no change in the value
     /// between the previous and next pixels. Only used by the bool drawing logic to
     /// draw draw a vertical line and prevent apparent aliasing
     force_anti_alias: bool,
-    dinotrace_style: DinotraceDrawingStyle,
+    trace_value: TraceValue,
 }
 
 pub enum DrawingCommands {
@@ -159,7 +136,7 @@ fn variable_draw_commands(
     translators: &TranslatorList,
     view_width: f32,
     viewport_idx: usize,
-    use_dinotrace_style: bool,
+    trace_style: TraceStyle,
 ) -> Option<VariableDrawCommands> {
     let wave_container = waves.inner.as_waves()?;
 
@@ -213,7 +190,7 @@ fn variable_draw_commands(
             &info,
             view_width,
             viewport_idx,
-            use_dinotrace_style,
+            trace_style,
         )
     }
 }
@@ -232,7 +209,7 @@ fn variable_digital_draw_commands(
     info: &VariableInfo,
     view_width: f32,
     viewport_idx: usize,
-    use_dinotrace_style: bool,
+    trace_style: TraceStyle,
 ) -> Option<VariableDrawCommands> {
     let mut clock_edges = vec![];
     let mut local_msgs = vec![];
@@ -316,11 +293,7 @@ fn variable_digital_draw_commands(
             translators,
         );
 
-        let dinotrace_style = if use_dinotrace_style {
-            DinotraceDrawingStyle::from_value(&val, meta.num_bits)
-        } else {
-            DinotraceDrawingStyle::Normal
-        };
+        let trace_value = TraceValue::from_value(&val, meta.num_bits, trace_style);
 
         for SubFieldFlatTranslationResult { names, value } in fields {
             let entry = local_commands.entry(names.clone()).or_insert_with(|| {
@@ -361,7 +334,7 @@ fn variable_digital_draw_commands(
                     DrawnRegion {
                         inner: value,
                         force_anti_alias: anti_alias && !new_value,
-                        dinotrace_style,
+                        trace_value,
                     },
                 ));
             }
@@ -453,7 +426,7 @@ impl SystemState {
             })
             .collect::<Vec<_>>();
 
-        let use_dinotrace_style = self.use_dinotrace_style();
+        let trace_style = self.trace_style();
         let translators = &self.translators;
         let commands = waves
             .items_tree
@@ -477,7 +450,7 @@ impl SystemState {
                     translators,
                     cfg.canvas_size.x,
                     viewport_idx,
-                    use_dinotrace_style,
+                    trace_style,
                 )
             })
             .collect::<Vec<_>>();
@@ -1407,8 +1380,8 @@ impl SystemState {
                     PathStroke::NONE,
                 ));
             }
-            match prev_region.dinotrace_style {
-                DinotraceDrawingStyle::Normal => {
+            match prev_region.trace_value {
+                TraceValue::Normal => {
                     let stroke = Stroke {
                         color,
                         width: self.user.config.theme.linewidth,
@@ -1416,7 +1389,7 @@ impl SystemState {
 
                     ctx.painter.add(PathShape::line(points, stroke));
                 }
-                DinotraceDrawingStyle::AllOnes => {
+                TraceValue::AllOnes => {
                     let stroke_thick = Stroke {
                         color,
                         width: self.user.config.theme.thick_linewidth,
@@ -1430,7 +1403,15 @@ impl SystemState {
                     ctx.painter
                         .add(PathShape::line(points[3..7].to_vec(), stroke));
                 }
-                DinotraceDrawingStyle::AllZeros => {
+                TraceValue::AllZeros => {
+                    let stroke_thick = Stroke {
+                        color,
+                        width: self.user.config.theme.linewidth,
+                    };
+                    ctx.painter
+                        .add(PathShape::line(points[3..7].to_vec(), stroke_thick));
+                }
+                TraceValue::AllZerosThick => {
                     let stroke_thick = Stroke {
                         color,
                         width: self.user.config.theme.thick_linewidth,

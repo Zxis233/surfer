@@ -22,6 +22,7 @@ use crate::hierarchy::{HierarchyStyle, ParameterDisplayLocation};
 use crate::keyboard_shortcuts::{SurferShortcuts, deserialize_shortcuts};
 use crate::mousegestures::GestureZones;
 use crate::time::TimeFormat;
+use crate::trace_style::TraceStyle;
 use crate::wave_container::VariableMeta;
 use crate::{clock_highlighting::ClockHighlightType, variable_name_type::VariableNameType};
 use surfer_translation_types::VariableEncoding;
@@ -260,8 +261,8 @@ pub struct SurferLayout {
     move_focus_on_inserted_marker: bool,
     /// Fill high values in boolean waveforms
     fill_high_values: bool,
-    /// Dinotrace drawing style (thick upper line for all-ones, no upper line for all-zeros)
-    use_dinotrace_style: bool,
+    /// Trace style for vector waveforms
+    trace_style: TraceStyle,
     /// Value to display when cursor is on a transition
     transition_value: TransitionValue,
 }
@@ -348,8 +349,8 @@ impl SurferLayout {
         self.hierarchy_style
     }
     #[must_use]
-    pub fn use_dinotrace_style(&self) -> bool {
-        self.use_dinotrace_style
+    pub fn trace_style(&self) -> TraceStyle {
+        self.trace_style
     }
     #[must_use]
     pub fn transition_value(&self) -> TransitionValue {
