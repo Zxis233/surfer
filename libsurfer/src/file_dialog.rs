@@ -87,6 +87,7 @@ impl SystemState {
         &mut self,
         title: &'static str,
         filter: (String, Vec<String>),
+        default_file_name: Option<String>,
         messages: F,
     ) where
         F: FnOnce(FileHandle) -> Fut + Send + 'static,
@@ -95,7 +96,11 @@ impl SystemState {
         let sender = self.channels.msg_sender.clone();
 
         perform_async_work(async move {
-            if let Some(file) = create_file_dialog(filter, title).save_file().await {
+            let mut dialog = create_file_dialog(filter, title);
+            if let Some(file_name) = default_file_name {
+                dialog = dialog.set_file_name(&file_name);
+            }
+            if let Some(file) = dialog.save_file().await {
                 checked_send_many(&sender, messages(file).await);
             }
         });
@@ -106,6 +111,7 @@ impl SystemState {
         &mut self,
         title: &'static str,
         filter: (String, Vec<String>),
+        default_file_name: Option<String>,
         messages: F,
     ) where
         F: FnOnce(FileHandle) -> Fut + 'static,
@@ -114,7 +120,11 @@ impl SystemState {
         let sender = self.channels.msg_sender.clone();
 
         perform_async_work(async move {
-            if let Some(file) = create_file_dialog(filter, title).save_file().await {
+            let mut dialog = create_file_dialog(filter, title);
+            if let Some(file_name) = default_file_name {
+                dialog = dialog.set_file_name(&file_name);
+            }
+            if let Some(file) = dialog.save_file().await {
                 checked_send_many(&sender, messages(file).await);
             }
         });

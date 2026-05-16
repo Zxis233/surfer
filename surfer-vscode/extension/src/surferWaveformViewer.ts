@@ -173,8 +173,12 @@ export class SurferWaveformViewerEditorProvider
           const filterRecord: Record<string, string[]> = {
             'Surfer state files': ['ron'],
           }
+          const suggestedFileName =
+            typeof message.fileName === 'string' && message.fileName.trim().length > 0
+              ? message.fileName.trim()
+              : 'surfer_state.surf.ron'
           const defaultUri = vscode.Uri.file(
-            require('path').join(require('os').homedir(), 'surfer_state.surf.ron')
+            require('path').join(require('os').homedir(), suggestedFileName)
           )
           const uri = await vscode.window.showSaveDialog({
             filters: filterRecord,
