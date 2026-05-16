@@ -113,7 +113,18 @@ fn get_viewport_rect(
         ctx.cfg.canvas_size.x,
         num_timestamps,
     );
-    let min = (ctx.to_screen)(minx, 0.);
-    let max = (ctx.to_screen)(maxx, ctx.cfg.canvas_size.y);
-    Rect { min, max }
+    let mut min = (ctx.to_screen)(minx, 0.);
+    let mut max = (ctx.to_screen)(maxx, ctx.cfg.canvas_size.y);
+
+    if max.x < min.x {
+        std::mem::swap(&mut min.x, &mut max.x);
+    }
+
+    if max.x - min.x < 1.0 {
+        let center_x = min.x.midpoint(max.x);
+        min.x = center_x - 0.5;
+        max.x = center_x + 0.5;
+    }
+
+    Rect::from_min_max(min, max)
 }
