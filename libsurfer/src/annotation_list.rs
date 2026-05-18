@@ -165,15 +165,24 @@ impl WaveData {
             .show_header(ui, |ui| {
                 ui.label(format!("{} ({})", group.name, group.annotations.len()));
 
+                let delete_tooltip;
+                let delete_message;
+                if group.annotations.is_empty() {
+                    delete_tooltip = "Delete this group";
+                    delete_message = Message::DeleteAnnotationGroup(group.name.clone());
+                } else {
+                    delete_tooltip = "Delete all annotations in this group";
+                    delete_message = Message::DeleteAllAnnotationInGroup(group.name.clone());
+                }
                 // Push everything else to the right
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if group.name != DEFAULT_GROUP_NAME
                         && ui
                             .button(icons::DELETE_BIN_LINE)
-                            .on_hover_text("Delete all annotations in this group")
+                            .on_hover_text(delete_tooltip)
                             .clicked()
                     {
-                        msgs.push(Message::DeleteAllAnnotationInGroup(group.name.clone()));
+                        msgs.push(delete_message);
                     }
                     if ui
                         .button(group_icon)
@@ -291,14 +300,14 @@ impl WaveData {
                                 msgs.push(Message::ToggleAnnotationListShowComments(*id));
                             }
 
-                            // Group Selector
-                            let current_group = &mut annotation.get_group_name();
+                            //This is only here because selectable_value needs a string, we dont want it to match any group we have.
+                            let placeholder = "ungrouped".to_string();
 
                             ui.menu_button(icons::FOLDER_TRANSFER_LINE, |ui| {
                                 for group in self.annotation_groups.iter().rev() {
                                     if ui
                                         .selectable_value(
-                                            current_group,
+                                            &mut Some(placeholder.clone()),
                                             Some(group.name.clone()),
                                             group.name.clone(),
                                         )
@@ -434,6 +443,8 @@ impl WaveData {
     pub fn remove_all_annotations_from_group(&mut self, name: String) {
         for group in &mut self.annotation_groups {
             if group.name == name {
+                self.annotations
+                    .retain(|annotation| !group.annotations.contains(&annotation.get_id()));
                 group.cycle_counter = 0;
                 group.annotations = Vec::new();
             }

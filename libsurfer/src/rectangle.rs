@@ -163,14 +163,6 @@ impl Annotatable for RectAnnotation {
         self.annotation_data.name.clone()
     }
 
-    fn set_group_name(&mut self, name: Option<String>) {
-        self.annotation_data.group_name = name;
-    }
-
-    fn get_group_name(&self) -> Option<String> {
-        self.annotation_data.group_name.clone()
-    }
-
     fn is_selected(&mut self) {
         self.annotation_data.stroke.width *= SELECTED_WIDTH_FACTOR;
         self.annotation_data
@@ -282,8 +274,14 @@ impl Annotatable for RectAnnotation {
             let hover_start_time = time_formatter.format(&self.from.time);
             let hover_end_time = time_formatter.format(&self.to.time);
 
+            let group_name = waves
+                .annotation_groups
+                .iter()
+                .find(|group| group.annotations.contains(&self.get_id()))
+                .map(|group| group.name.clone())
+                .unwrap_or("Ungrouped".to_string());
             let res = ui.add(rectangle_annotation).on_hover_ui(|ui| {
-                self.draw_hover_info(ui, (&hover_start_time, &hover_end_time));
+                self.draw_hover_info(group_name, ui, (&hover_start_time, &hover_end_time));
             });
 
             if res.clicked_by(egui::PointerButton::Primary) {

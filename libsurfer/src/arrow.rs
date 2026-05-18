@@ -117,14 +117,6 @@ impl Annotatable for ArrowAnnotation {
         self.annotation_data.name.clone()
     }
 
-    fn set_group_name(&mut self, name: Option<String>) {
-        self.annotation_data.group_name = name;
-    }
-
-    fn get_group_name(&self) -> Option<String> {
-        self.annotation_data.group_name.clone()
-    }
-
     fn is_selected(&mut self) {
         self.annotation_data.stroke.width *= SELECTED_WIDTH_FACTOR;
         self.annotation_data
@@ -277,7 +269,7 @@ impl Annotatable for ArrowAnnotation {
                 .and_then(|p| arrow_annotation.hit_distance_screen(p))
                 .is_some();
 
-        let _response: Response = ui.add(arrow_annotation);
+        ui.add(arrow_annotation);
 
         if exact_clicked {
             // Notify the application that this annotation was clicked and that the
@@ -308,8 +300,14 @@ impl Annotatable for ArrowAnnotation {
             let hover_start_time = time_formatter.format(&self.from.time.clone());
             let hover_end_time = time_formatter.format(&self.to.time.clone());
 
+            let group_name = waves
+                .annotation_groups
+                .iter()
+                .find(|group| group.annotations.contains(&self.get_id()))
+                .map(|group| group.name.clone())
+                .unwrap_or("Ungrouped".to_string());
             hover_response.on_hover_ui(|ui| {
-                self.draw_hover_info(ui, (&hover_start_time, &hover_end_time));
+                self.draw_hover_info(group_name, ui, (&hover_start_time, &hover_end_time));
             });
         }
     }

@@ -22,7 +22,6 @@ const DEFAULT_HIDE_RADIUS: f32 = 5.0;
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct AnnotationData {
     pub id: Id,
-    pub group_name: Option<String>,
     pub visible: bool,
     pub name: String,
     pub stroke: Stroke,
@@ -36,7 +35,6 @@ impl AnnotationData {
         let c_id = Id::new(("comment_box", num));
         AnnotationData {
             id,
-            group_name: None,
             visible: true,
             name,
             stroke: Stroke::new(2.0, Color32::from_rgb(255, 255, 255)),
@@ -77,20 +75,6 @@ impl Annotatable for Annotation {
         match self {
             Annotation::Arrow(a) => a.get_name(),
             Annotation::Rect(r) => r.get_name(),
-        }
-    }
-
-    fn set_group_name(&mut self, name: Option<String>) {
-        match self {
-            Annotation::Arrow(a) => a.set_group_name(name),
-            Annotation::Rect(r) => r.set_group_name(name),
-        }
-    }
-
-    fn get_group_name(&self) -> Option<String> {
-        match self {
-            Annotation::Arrow(a) => a.get_group_name(),
-            Annotation::Rect(r) => r.get_group_name(),
         }
     }
 
@@ -263,8 +247,6 @@ pub trait Annotatable {
     fn get_type(&self) -> &str;
     fn set_name(&mut self, name: String);
     fn get_name(&self) -> String;
-    fn set_group_name(&mut self, name: Option<String>);
-    fn get_group_name(&self) -> Option<String>;
     fn is_selected(&mut self);
     fn set_visibility(&mut self, visible: bool);
     fn show_comments(&self) -> bool;
@@ -383,7 +365,12 @@ pub trait Annotatable {
             });
     }
 
-    fn draw_hover_info(&self, ui: &mut egui::Ui, (time_start_str, time_end_str): (&str, &str)) {
+    fn draw_hover_info(
+        &self,
+        group_name: String,
+        ui: &mut egui::Ui,
+        (time_start_str, time_end_str): (&str, &str),
+    ) {
         ui.label(format!("Start time: {time_start_str} "));
         ui.label(format!("End time:   {time_end_str} "));
         ui.painter().add(egui::Shape::line_segment(
@@ -391,11 +378,7 @@ pub trait Annotatable {
             egui::Stroke::new(0.2, egui::Color32::LIGHT_GRAY),
         ));
         ui.label(format!("Name: {}", self.get_name()));
-        ui.label(format!(
-            "Group: {}",
-            self.get_group_name()
-                .unwrap_or_else(|| "Ungrouped".to_string())
-        ));
+        ui.label(format!("Group: {}", group_name));
         ui.label(format!("Type: {}", self.get_type()));
         ui.label(format!("ID: {:?}", self.get_id()));
     }
