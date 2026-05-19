@@ -84,17 +84,13 @@ impl LoadSignalsCmd {
 pub struct LoadSignalsResult {
     source: Option<SignalSource>,
     server: Option<String>,
-    signals: Vec<(SignalRef, Signal)>,
+    signals: Vec<Signal>,
     from_unique_id: u64,
 }
 
 impl LoadSignalsResult {
     #[must_use]
-    pub fn local(
-        source: SignalSource,
-        signals: Vec<(SignalRef, Signal)>,
-        from_unique_id: u64,
-    ) -> Self {
+    pub fn local(source: SignalSource, signals: Vec<Signal>, from_unique_id: u64) -> Self {
         Self {
             source: Some(source),
             server: None,
@@ -104,7 +100,7 @@ impl LoadSignalsResult {
     }
 
     #[must_use]
-    pub fn remote(server: String, signals: Vec<(SignalRef, Signal)>, from_unique_id: u64) -> Self {
+    pub fn remote(server: String, signals: Vec<Signal>, from_unique_id: u64) -> Self {
         Self {
             source: None,
             server: Some(server),
@@ -142,12 +138,12 @@ impl WellenContainer {
     ) -> Self {
         // generate a list of names for all variables and scopes since they will be requested by the parser
         let h = &hierarchy;
-        let scopes = h.iter_scopes().map(|r| r.full_name(h)).collect::<Vec<_>>();
+        let scopes = h.all_scopes().map(|r| r.full_name(h)).collect::<Vec<_>>();
         let vars: Vec<String> = h
-            .iter_vars()
+            .all_vars()
             .map(|r| {
                 if let Some(i) = r.index()
-                    && i.length() == 1
+                    && i.width() == 1
                 {
                     format!("{}[{}]", r.full_name(h), i.lsb())
                 } else {
@@ -293,7 +289,7 @@ impl WellenContainer {
                     let v = &h[id];
                     let index = v
                         .index()
-                        .and_then(|i| if i.length() == 1 { Some(i.lsb()) } else { None });
+                        .and_then(|i| if i.width() == 1 { Some(i.lsb()) } else { None });
                     VariableRef::new_with_id_and_index(
                         scope_ref.clone(),
                         v.name(h).to_string(),
@@ -316,7 +312,7 @@ impl WellenContainer {
                     let v = &h[id];
                     let index = v
                         .index()
-                        .and_then(|i| if i.length() == 1 { Some(i.lsb()) } else { None });
+                        .and_then(|i| if i.width() == 1 { Some(i.lsb()) } else { None });
                     VariableRef::new_with_id_and_index(
                         scope_ref.clone(),
                         v.name(h).to_string(),
@@ -338,7 +334,7 @@ impl WellenContainer {
                     let v = &h[id];
                     let index = v
                         .index()
-                        .and_then(|i| if i.length() == 1 { Some(i.lsb()) } else { None });
+                        .and_then(|i| if i.width() == 1 { Some(i.lsb()) } else { None });
                     VariableRef::new_with_id_and_index(
                         scope_ref.clone(),
                         v.name(h).to_string(),
@@ -361,7 +357,7 @@ impl WellenContainer {
                     let v = &h[id];
                     let index = v
                         .index()
-                        .and_then(|i| if i.length() == 1 { Some(i.lsb()) } else { None });
+                        .and_then(|i| if i.width() == 1 { Some(i.lsb()) } else { None });
                     VariableRef::new_with_id_and_index(
                         scope_ref.clone(),
                         v.name(h).to_string(),
@@ -417,7 +413,7 @@ impl WellenContainer {
                     let var_index = h[*r].index();
                     // match either exact index, or if no index is provided, match only variables with length >= 2
                     var_index == index
-                        || (index.is_none() && var_index.is_some_and(|i| i.length() >= 2))
+                        || (index.is_none() && var_index.is_some_and(|i| i.width() >= 2))
                 }
             })?;
             (var, new_scope_ref)
@@ -482,7 +478,7 @@ impl WellenContainer {
     pub fn load_all_params(&mut self) -> Result<Option<LoadSignalsCmd>> {
         let h = &self.hierarchy;
         let params = h
-            .iter_vars()
+            .all_vars()
             .filter(|r| r.var_type().is_parameter())
             .map(wellen::Var::signal_ref)
             .collect::<Vec<_>>();
@@ -499,8 +495,8 @@ impl WellenContainer {
             self.server = res.server;
             debug_assert!(self.server.is_some() || self.source.is_some());
             // install signals
-            for (id, signal) in res.signals {
-                self.signals.insert(id, Arc::new(signal));
+            for signal in res.signals {
+                self.signals.insert(signal.signal_ref(), Arc::new(signal));
             }
         }
 
@@ -746,15 +742,16 @@ impl WellenContainer {
 
     pub fn variable_to_meta(&self, variable: &VariableRef) -> Result<VariableMeta> {
         let var = self.get_var(variable)?;
-        let encoding = match var.signal_encoding() {
+        let encoding = match var.signal_encoding(&self.hierarchy) {
             SignalEncoding::String => VariableEncoding::String,
             SignalEncoding::Real => VariableEncoding::Real,
             SignalEncoding::BitVector(_) => VariableEncoding::BitVector,
             SignalEncoding::Event => VariableEncoding::Event,
+            SignalEncoding::Unknown => unreachable!("should never get an unknown signal encoding"),
         };
         Ok(VariableMeta {
             var: variable.clone(),
-            num_bits: var.length(),
+            num_bits: var.length(&self.hierarchy),
             variable_type: Some(VariableType::from_wellen_type(var.var_type())),
             variable_type_name: var.vhdl_type_name(&self.hierarchy).map(ToString::to_string),
             index: var.index().map(VariableIndex::from_wellen_type),
@@ -847,21 +844,20 @@ fn scope_type_to_string(tpe: ScopeType) -> &'static str {
     }
 }
 
-fn convert_variable_value(value: wellen::SignalValue) -> VariableValue {
+fn convert_variable_value(value: wellen::SignalValueRef) -> VariableValue {
     match value {
-        wellen::SignalValue::Binary(data, _bits) => {
-            VariableValue::BigUint(BigUint::from_bytes_be(data))
+        wellen::SignalValueRef::BitVec(bv) => {
+            if let Some(be_bytes) = bv.be_bytes() {
+                VariableValue::BigUint(BigUint::from_bytes_be(be_bytes))
+            } else {
+                VariableValue::String(bv.bit_string())
+            }
         }
-        wellen::SignalValue::FourValue(_, _) | wellen::SignalValue::NineValue(_, _) => {
-            VariableValue::String(
-                value
-                    .to_bit_string()
-                    .expect("failed to convert value {value:?} to a string"),
-            )
+        wellen::SignalValueRef::String(value) => VariableValue::String(value.to_string()),
+        wellen::SignalValueRef::Real(value) => {
+            VariableValue::BigUint(BigUint::from(value.to_bits()))
         }
-        wellen::SignalValue::String(value) => VariableValue::String(value.to_string()),
-        wellen::SignalValue::Real(value) => VariableValue::BigUint(BigUint::from(value.to_bits())),
-        wellen::SignalValue::Event => VariableValue::String("Event".to_string()),
+        wellen::SignalValueRef::Event => VariableValue::String("Event".to_string()),
     }
 }
 

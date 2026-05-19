@@ -693,10 +693,10 @@ fn loader(
                         let mut state_guard = state
                             .write()
                             .expect("State lock poisoned in loader when storing signals");
-                        for (id, signal) in result {
+                        for signal in result {
                             state_guard.file_infos[file_index]
                                 .signals
-                                .insert(id, signal);
+                                .insert(signal.signal_ref(), signal);
                         }
                         state_guard.file_infos[file_index].notify.notify_waiters();
                     }

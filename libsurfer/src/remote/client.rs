@@ -160,7 +160,7 @@ pub async fn get_signals(
     signals: &[wellen::SignalRef],
     max_url_length: u16,
     file_index: usize,
-) -> Result<Vec<(wellen::SignalRef, wellen::Signal)>> {
+) -> Result<Vec<wellen::Signal>> {
     if signals.is_empty() {
         return Ok(vec![]);
     }
@@ -219,7 +219,7 @@ fn format_signal_url(base_url: &str, signals: &[wellen::SignalRef]) -> String {
 async fn get_signals_batch(
     base_url: &str,
     signals: &[wellen::SignalRef],
-) -> Result<Vec<(wellen::SignalRef, wellen::Signal)>> {
+) -> Result<Vec<wellen::Signal>> {
     let client = get_client();
     let url = format_signal_url(base_url, signals);
 
@@ -243,12 +243,12 @@ async fn get_signals_batch(
     for _ in 0..(num_ids - 1) {
         let compressed: wellen::CompressedSignal = opts.deserialize_from(&mut reader)?;
         let signal = compressed.uncompress();
-        out.push((signal.signal_ref(), signal));
+        out.push(signal);
     }
     // for the final signal, we expect to consume all bytes
     let compressed: wellen::CompressedSignal = BINCODE_OPTIONS.deserialize_from(&mut reader)?;
     let signal = compressed.uncompress();
-    out.push((signal.signal_ref(), signal));
+    out.push(signal);
     Ok(out)
 }
 

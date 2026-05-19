@@ -6581,9 +6581,9 @@ checksum = "a751b3277700db47d3e574514de2eced5e54dc8a5436a3bf7a0b248b2cee16f3"
 
 [[package]]
 name = "wellen"
-version = "0.20.5"
+version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df2bca6041f0b336e40333f8875d441292edc75fa36a15415a14f20bea7f9c93"
+checksum = "608db99b1211bf071279880bc27e3047bd9cf562594c8985f81d8fc48de3c29e"
 dependencies = [
  "fst-reader",
  "indexmap",
@@ -6595,6 +6595,7 @@ dependencies = [
  "rayon",
  "rustc-hash 2.1.1",
  "serde",
+ "smallvec",
  "thiserror 2.0.17",
 ]
 
