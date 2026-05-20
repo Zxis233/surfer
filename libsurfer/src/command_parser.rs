@@ -270,7 +270,7 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "zoom_fit",
             "scope_add",
             #[cfg(not(target_arch = "wasm32"))]
-            "create",
+            "create_default_config",
             "scope_add_recursive",
             "scope_add_as_group",
             "scope_add_as_group_recursive",
@@ -368,7 +368,7 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "show_quick_start",
             "show_logs",
             #[cfg(not(target_arch = "wasm32"))]
-            "create",
+            "create_default_config",
             #[cfg(feature = "performance_plot")]
             "show_performance",
             #[cfg(not(target_arch = "wasm32"))]
@@ -408,20 +408,7 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                     }),
                 ),
 
-                "create" => Some(Command::NonTerminal(
-                    ParamGreed::Word,
-                    vec!["default-config".into()],
-                    Box::new(|query, _| {
-                        let query = query.trim();
-
-                        if query == "default-config" {
-                            Some(Command::Terminal(Message::DownloadDefaultConfig))
-                        } else {
-                            None
-                        }
-                    }),
-                )),
-
+                "create_default_config" => Some(Command::Terminal(Message::DownloadDefaultConfig)),
                 "switch_file" => single_word_delayed_suggestions(
                     Box::new(all_wave_files),
                     Box::new(|word| {
