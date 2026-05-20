@@ -981,11 +981,12 @@ fn binary_search(times: &[Time], needle: Time) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wellen::States;
 
     #[test]
     fn test_signal_conversion() {
         let inp0: &[u8] = &[128, 0, 0, 3];
-        let out0 = convert_variable_value(wellen::SignalValue::Binary(inp0, 32));
+        let out0 = convert_variable_value(wellen::SignalValueRef::bit_vec(States::Two, 32, inp0));
         assert_eq!(out0, VariableValue::BigUint(BigUint::from(0x80000003u64)));
     }
 }
