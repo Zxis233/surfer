@@ -40,4 +40,3 @@ repos:
     rev: v10.0.0
     hooks:
     - id: oxipng
-exclude: $(f128|instruction-decoder)

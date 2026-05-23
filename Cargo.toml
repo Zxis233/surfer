@@ -9,7 +9,7 @@ members = [
     "translator-docs",
     "wasm_example_translator",
 ]
-exclude = [".cache", "f128", "instruction-decoder"]
+exclude = [".cache"]
 default-members = ["surfer", "surver", "libsurfer"]
 
 [workspace.package]
@@ -58,6 +58,7 @@ extism = { version = "1.21", default-features = false }
 extism-convert = "1.21"
 extism-manifest = "1.21"
 eyre = "0.6.12"
+f128 = { git = "https://github.com/jkarns275/f128.git", rev = "7f971c34568dd6ae4e97a602bf15c23137b2cad5" }
 fastrand = "2.3.0"
 fern = { version = "0.7.1", features = ["colored"] }
 filetime = "0.2"
@@ -72,7 +73,7 @@ hyper = { version = "1.4", features = ["http1", "server"] }
 hyper-util = { version = "0.1.6", features = ["tokio"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 image-compare = "0.5"
-instruction-decoder = { path = "instruction-decoder" }
+instruction-decoder = { git = "https://github.com/ics-jku/instruction-decoder.git", rev = "4cd6db5be5d8bb1dc321d98ab93648078ab2b1b6", features = ["specs"] }
 itertools = "0.14.0"
 leb128 = "0.2.5"
 local-impl = "0.1.2"

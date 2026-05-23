@@ -1909,6 +1909,7 @@ dependencies = [
 [[package]]
 name = "f128"
 version = "0.2.9"
+source = "git+https://github.com/jkarns275/f128.git?rev=7f971c34568dd6ae4e97a602bf15c23137b2cad5#7f971c34568dd6ae4e97a602bf15c23137b2cad5"
 dependencies = [
  "f128_input",
  "f128_internal",
@@ -1919,6 +1920,7 @@ dependencies = [
 [[package]]
 name = "f128_input"
 version = "0.2.1"
+source = "git+https://github.com/jkarns275/f128.git?rev=7f971c34568dd6ae4e97a602bf15c23137b2cad5#7f971c34568dd6ae4e97a602bf15c23137b2cad5"
 dependencies = [
  "f128_internal",
 ]
@@ -1926,6 +1928,7 @@ dependencies = [
 [[package]]
 name = "f128_internal"
 version = "0.2.2"
+source = "git+https://github.com/jkarns275/f128.git?rev=7f971c34568dd6ae4e97a602bf15c23137b2cad5#7f971c34568dd6ae4e97a602bf15c23137b2cad5"
 dependencies = [
  "cc",
  "libc",
@@ -2770,6 +2773,7 @@ dependencies = [
 [[package]]
 name = "instruction-decoder"
 version = "0.1.0"
+source = "git+https://github.com/ics-jku/instruction-decoder.git?rev=4cd6db5be5d8bb1dc321d98ab93648078ab2b1b6#4cd6db5be5d8bb1dc321d98ab93648078ab2b1b6"
 dependencies = [
  "toml 1.1.2+spec-1.1.0",
 ]
