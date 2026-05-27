@@ -320,13 +320,12 @@ pub enum Message {
     SetFrameBufferRange(Vec<(i64, i64)>),
     SetMouseGestureDragStart(Option<Pos2>, Option<BigInt>),
     SetMeasureDragStart(Option<Pos2>),
-    SetFilterFocused(bool),
     /// Set or clear focus state for a widget identified by id string.
-    SetWidgetFocused(String, bool),
+    SetTextEditFocused(String, bool),
     /// Request focus (one-shot) for a widget identified by id string.
-    SetRequestWidgetFocus(String, bool),
+    SetRequestTextEditFocus(String, bool),
     /// Clear focus state for all widgets.
-    ClearAllWidgetFocuses,
+    ClearAllTextEditFocuses,
     SetVariableNameFilterType(VariableNameFilterType),
     SetVariableNameFilterCaseInsensitive(bool),
     SetVariableIOFilter(VariableIOFilterType, bool),

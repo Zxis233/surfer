@@ -8,11 +8,9 @@ use crate::{MoveDir, SystemState, message::Message, wave_data::PER_SCROLL_EVENT}
 
 impl SystemState {
     pub fn handle_pressed_keys(&self, ctx: &Context, msgs: &mut Vec<Message>) {
-        let any_widget_focused = self.widget_focused.values().any(|&v| v);
-        if !(self.command_prompt.visible
-            || self.user.variable_name_filter_focused
-            || any_widget_focused)
-        {
+        let any_widget_focused = self.text_edit_focused.values().any(|&v| v);
+
+        if !(self.command_prompt.visible || any_widget_focused) {
             self.user.config.shortcuts.process(ctx, msgs, self);
         }
         ctx.input(|i| {
@@ -27,7 +25,7 @@ impl SystemState {
                     key,
                     pressed,
                     self.command_prompt.visible,
-                    self.user.variable_name_filter_focused || any_widget_focused,
+                    any_widget_focused,
                 ) {
                     // Consolidate numeric key handling into a single arm using helper
                     (k, true, false, false)
@@ -55,8 +53,7 @@ impl SystemState {
                         msgs.push(Message::ItemSelectionClear);
                     }
                     (Key::Escape, true, _, true) => {
-                        msgs.push(Message::ClearAllWidgetFocuses);
-                        msgs.push(Message::SetFilterFocused(false));
+                        msgs.push(Message::ClearAllTextEditFocuses);
                     }
                     (Key::G, true, true, false) if modifiers.command => {
                         msgs.push(Message::HideCommandPrompt);

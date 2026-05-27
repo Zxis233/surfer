@@ -1732,16 +1732,15 @@ impl SystemState {
                 self.gesture_start_time = time;
             }
             Message::SetMeasureDragStart(pos) => self.measure_start_location = pos,
-            Message::SetFilterFocused(s) => self.user.variable_name_filter_focused = s,
-            Message::SetWidgetFocused(id, s) => {
-                self.widget_focused.insert(id, s);
+            Message::SetTextEditFocused(id, s) => {
+                self.text_edit_focused.insert(id, s);
             }
-            Message::SetRequestWidgetFocus(id, s) => {
-                self.widget_request_focus.insert(id, s);
+            Message::SetRequestTextEditFocus(id, s) => {
+                self.text_edit_request_focus.insert(id, s);
             }
-            Message::ClearAllWidgetFocuses => {
-                self.widget_focused.clear();
-                self.widget_request_focus.clear();
+            Message::ClearAllTextEditFocuses => {
+                self.text_edit_focused.clear();
+                self.text_edit_request_focus.clear();
             }
             Message::SetVariableNameFilterType(variable_name_filter_type) => {
                 self.user.variable_filter.name_filter_type = variable_name_filter_type;

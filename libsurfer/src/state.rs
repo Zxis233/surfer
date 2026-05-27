@@ -111,6 +111,7 @@ pub struct UserState {
     pub(crate) show_reload_suggestion: Option<ReloadWaveformDialog>,
     #[serde(skip, default)]
     pub(crate) show_open_sibling_state_file_suggestion: Option<OpenSiblingStateFileDialog>,
+    /// Unused, but kept for backward compatibility with old state files.
     pub(crate) variable_name_filter_focused: bool,
     pub(crate) variable_filter: VariableFilter,
     //Sidepanel width

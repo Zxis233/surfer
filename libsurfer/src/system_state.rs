@@ -102,9 +102,9 @@ pub struct SystemState {
 
     pub(crate) time_widgets: RefCell<std::collections::HashMap<String, TimeInputState>>,
     /// Map of widget id -> focused state.
-    pub(crate) widget_focused: std::collections::HashMap<String, bool>,
+    pub(crate) text_edit_focused: std::collections::HashMap<String, bool>,
     /// Map of widget id -> one-shot request focus flag.
-    pub(crate) widget_request_focus: std::collections::HashMap<String, bool>,
+    pub(crate) text_edit_request_focus: std::collections::HashMap<String, bool>,
     pub(crate) frame_buffer_content: Option<FrameBufferContent>,
     pub(crate) frame_buffer_array_cache: Option<FrameBufferArrayCache>,
     pub(crate) frame_buffer_pixel_cache: Option<FrameBufferPixelCache>,
@@ -183,8 +183,8 @@ impl SystemState {
             surver_load_options: RefCell::new(LoadOptions::Clear),
             expand_parameter_section: false,
             time_widgets: RefCell::new(std::collections::HashMap::new()),
-            widget_focused: std::collections::HashMap::new(),
-            widget_request_focus: std::collections::HashMap::new(),
+            text_edit_focused: std::collections::HashMap::new(),
+            text_edit_request_focus: std::collections::HashMap::new(),
             frame_buffer_content: None,
             frame_buffer_array_cache: None,
             frame_buffer_pixel_cache: None,

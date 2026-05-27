@@ -297,12 +297,18 @@ impl SystemState {
                         });
                     }
 
-                    // Handle focus
+                    // Handle focus via generic widget focus messages
                     if response.gained_focus() {
-                        msgs.push(Message::SetFilterFocused(true));
+                        msgs.push(Message::SetTextEditFocused(
+                            "variable-filter".to_string(),
+                            true,
+                        ));
                     }
                     if response.lost_focus() {
-                        msgs.push(Message::SetFilterFocused(false));
+                        msgs.push(Message::SetTextEditFocused(
+                            "variable-filter".to_string(),
+                            false,
+                        ));
                     }
                     ui.spacing_mut().button_padding = default_padding;
                 });

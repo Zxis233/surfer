@@ -791,10 +791,16 @@ impl SystemState {
         );
 
         // Determine whether a one-shot focus request is pending for this widget.
-        let request_focus = *self.widget_request_focus.get(id_prefix).unwrap_or(&false);
+        let request_focus = *self
+            .text_edit_request_focus
+            .get(id_prefix)
+            .unwrap_or(&false);
         if request_focus && !text_response.has_focus() {
             text_response.request_focus();
-            msgs.push(Message::SetRequestWidgetFocus(id_prefix.to_string(), false));
+            msgs.push(Message::SetRequestTextEditFocus(
+                id_prefix.to_string(),
+                false,
+            ));
         }
 
         if text_response.changed() {
@@ -822,7 +828,7 @@ impl SystemState {
 
         // Handle focus
         if text_response.gained_focus() {
-            msgs.push(Message::SetWidgetFocused(id_prefix.to_string(), true));
+            msgs.push(Message::SetTextEditFocused(id_prefix.to_string(), true));
         }
         if text_response.lost_focus() {
             if text_response.ctx.input(|i| i.key_pressed(Key::Enter)) {
@@ -833,19 +839,8 @@ impl SystemState {
                     msgs.push(on_commit(time_stamp));
                 }
             }
-            msgs.push(Message::SetWidgetFocused(id_prefix.to_string(), false));
+            msgs.push(Message::SetTextEditFocused(id_prefix.to_string(), false));
         }
-    }
-
-    /// Return whether the widget with given id is focused.
-    pub fn widget_focused(&self, id: &str) -> bool {
-        *self.widget_focused.get(id).unwrap_or(&false)
-    }
-
-    /// Take and clear a one-shot focus request for the given widget id.
-    /// Returns true if a request was present.
-    pub fn take_request_widget_focus(&mut self, id: &str) -> bool {
-        self.widget_request_focus.remove(id).unwrap_or(false)
     }
 }
 
