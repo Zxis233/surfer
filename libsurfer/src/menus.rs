@@ -210,7 +210,7 @@ impl SystemState {
                 self.user
                     .config
                     .shortcuts
-                    .format_shortcut(ShortcutAction::UiZoomIn),
+                    .format_shortcut(ShortcutAction::ZoomIn),
             )
             .enabled(waves_loaded)
             .add_closing_menu(msgs, ui);
@@ -227,7 +227,7 @@ impl SystemState {
                 self.user
                     .config
                     .shortcuts
-                    .format_shortcut(ShortcutAction::UiZoomOut),
+                    .format_shortcut(ShortcutAction::ZoomOut),
             )
             .enabled(waves_loaded)
             .add_closing_menu(msgs, ui);

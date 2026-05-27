@@ -1,1 +1,5 @@
 * text=auto eol=lf
+*.png binary
+*.fst binary
+*.ghw binary
+*.ftr binary

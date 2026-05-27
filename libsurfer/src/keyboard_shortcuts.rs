@@ -385,17 +385,6 @@ impl SurferShortcuts {
                 });
             }
             ShortcutAction::UiZoomIn => {
-                let mut next_factor = 0f32;
-                for factor in &state.user.config.layout.zoom_factors {
-                    if *factor < state.ui_zoom_factor() && *factor > next_factor {
-                        next_factor = *factor;
-                    }
-                }
-                if next_factor > 0f32 {
-                    msgs.push(Message::SetUIZoomFactor(next_factor));
-                }
-            }
-            ShortcutAction::UiZoomOut => {
                 let mut next_factor = f32::INFINITY;
                 for factor in &state.user.config.layout.zoom_factors {
                     if *factor > state.ui_zoom_factor() && *factor < next_factor {
@@ -403,6 +392,17 @@ impl SurferShortcuts {
                     }
                 }
                 if next_factor != f32::INFINITY {
+                    msgs.push(Message::SetUIZoomFactor(next_factor));
+                }
+            }
+            ShortcutAction::UiZoomOut => {
+                let mut next_factor = 0f32;
+                for factor in &state.user.config.layout.zoom_factors {
+                    if *factor < state.ui_zoom_factor() && *factor > next_factor {
+                        next_factor = *factor;
+                    }
+                }
+                if next_factor > 0f32 {
                     msgs.push(Message::SetUIZoomFactor(next_factor));
                 }
             }
