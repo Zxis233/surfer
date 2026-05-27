@@ -475,7 +475,7 @@ impl SurferShortcuts {
                 if let Some(waves) = &state.user.waves
                     && waves.focused_item.is_some()
                 {
-                    msgs.push(Message::ShowCommandPrompt("item_rename".to_owned(), None));
+                    msgs.push(Message::ShowCommandPrompt("item_rename ".to_owned(), None));
                 }
             }
             ShortcutAction::DividerAdd => {
