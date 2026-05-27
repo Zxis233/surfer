@@ -719,14 +719,69 @@ impl TimeInputState {
 ///     println!("Time: {value} {:?}", timescale);
 /// }
 /// ```
-pub(crate) fn time_input_widget(
-    ui: &mut Ui,
-    waves: &WaveData,
-    msgs: &mut Vec<Message>,
-    state: &mut TimeInputState,
-    request_focus: bool,
-) {
-    ui.horizontal(|ui| {
+impl SystemState {
+    /// Render a time input widget (text edit + unit combobox + action buttons).
+    pub(crate) fn time_input_widget(
+        &self,
+        ui: &mut Ui,
+        id_prefix: &str,
+        waves: &WaveData,
+        msgs: &mut Vec<Message>,
+    ) {
+        ui.horizontal(|ui| {
+            // Acquire or create the TimeInputState for this id
+            let mut widgets = self.time_widgets.borrow_mut();
+            let state = widgets
+                .entry(id_prefix.to_string())
+                .or_insert_with(TimeInputState::default);
+
+            let on_commit = |time_stamp: BigInt| {
+                // This closure captures the provided id_prefix and can be used for both buttons
+                Message::GoToTime(Some(time_stamp), 0)
+            };
+            // Render text edit and combobox
+            self.time_input_controls(ui, state, id_prefix, waves, msgs, &on_commit);
+
+            // Go button (uses provided on_commit closure)
+            let button_enabled = state.parsed_value.is_some();
+            let goto_button = Button::new(RichText::new(icons::TARGET_FILL).heading()).frame(false);
+            if ui
+                .add_enabled(button_enabled, goto_button)
+                .on_hover_text("Go to time")
+                .clicked()
+                && let Some(time_stamp) =
+                    state.to_timescale_ticks(&waves.inner.metadata().timescale)
+            {
+                msgs.push(on_commit(time_stamp));
+            }
+
+            // Cursor button remains specific to this widget and uses the same parsed value.
+            let cursor_button =
+                Button::new(RichText::new(icons::CURSOR_FILL).heading()).frame(false);
+            if ui
+                .add_enabled(button_enabled, cursor_button)
+                .on_hover_text("Set cursor at time")
+                .clicked()
+                && let Some(time_stamp) =
+                    state.to_timescale_ticks(&waves.inner.metadata().timescale)
+            {
+                msgs.push(Message::CursorSet(time_stamp));
+            }
+        });
+    }
+
+    /// Render the shared text edit and unit combobox for a time input.
+    fn time_input_controls<F>(
+        &self,
+        ui: &mut Ui,
+        state: &mut TimeInputState,
+        id_prefix: &str,
+        waves: &WaveData,
+        msgs: &mut Vec<Message>,
+        on_commit: &F,
+    ) where
+        F: Fn(BigInt) -> Message,
+    {
         // Text input field
         let mut input = state.input_text.clone();
         let text_response = ui.add(
@@ -735,9 +790,11 @@ pub(crate) fn time_input_widget(
                 .hint_text("e.g., 1.5ms"),
         );
 
+        // Determine whether a one-shot focus request is pending for this widget.
+        let request_focus = *self.widget_request_focus.get(id_prefix).unwrap_or(&false);
         if request_focus && !text_response.has_focus() {
             text_response.request_focus();
-            msgs.push(Message::SetRequestTimeEditFocus(false));
+            msgs.push(Message::SetRequestWidgetFocus(id_prefix.to_string(), false));
         }
 
         if text_response.changed() {
@@ -748,7 +805,9 @@ pub(crate) fn time_input_widget(
         let dropdown_enabled = state.input_unit.is_none();
 
         if dropdown_enabled {
-            egui::ComboBox::new("Unit", "")
+            // Use the provided id_prefix to create a unique egui id for the combo box
+            let combo_id = format!("{}-unit", id_prefix);
+            egui::ComboBox::new(combo_id, "")
                 .width(32.0)
                 .selected_text(state.selected_unit.to_string())
                 .show_ui(ui, |ui| {
@@ -763,7 +822,7 @@ pub(crate) fn time_input_widget(
 
         // Handle focus
         if text_response.gained_focus() {
-            msgs.push(Message::SetTimeEditFocused(true));
+            msgs.push(Message::SetWidgetFocused(id_prefix.to_string(), true));
         }
         if text_response.lost_focus() {
             if text_response.ctx.input(|i| i.key_pressed(Key::Enter)) {
@@ -771,33 +830,23 @@ pub(crate) fn time_input_widget(
                 if let Some(time_stamp) =
                     state.to_timescale_ticks(&waves.inner.metadata().timescale)
                 {
-                    msgs.push(Message::GoToTime(Some(time_stamp), 0));
+                    msgs.push(on_commit(time_stamp));
                 }
             }
-            msgs.push(Message::SetTimeEditFocused(false));
+            msgs.push(Message::SetWidgetFocused(id_prefix.to_string(), false));
         }
+    }
 
-        // Buttons
-        let button_enabled = state.parsed_value.is_some();
-        let goto_button = Button::new(RichText::new(icons::TARGET_FILL).heading()).frame(false);
-        if ui
-            .add_enabled(button_enabled, goto_button)
-            .on_hover_text("Go to time")
-            .clicked()
-            && let Some(time_stamp) = state.to_timescale_ticks(&waves.inner.metadata().timescale)
-        {
-            msgs.push(Message::GoToTime(Some(time_stamp), 0));
-        }
-        let cursor_button = Button::new(RichText::new(icons::CURSOR_FILL).heading()).frame(false);
-        if ui
-            .add_enabled(button_enabled, cursor_button)
-            .on_hover_text("Set cursor at time")
-            .clicked()
-            && let Some(time_stamp) = state.to_timescale_ticks(&waves.inner.metadata().timescale)
-        {
-            msgs.push(Message::CursorSet(time_stamp));
-        }
-    });
+    /// Return whether the widget with given id is focused.
+    pub fn widget_focused(&self, id: &str) -> bool {
+        *self.widget_focused.get(id).unwrap_or(&false)
+    }
+
+    /// Take and clear a one-shot focus request for the given widget id.
+    /// Returns true if a request was present.
+    pub fn take_request_widget_focus(&mut self, id: &str) -> bool {
+        self.widget_request_focus.remove(id).unwrap_or(false)
+    }
 }
 
 impl WaveData {

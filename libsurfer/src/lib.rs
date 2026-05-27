@@ -1733,8 +1733,16 @@ impl SystemState {
             }
             Message::SetMeasureDragStart(pos) => self.measure_start_location = pos,
             Message::SetFilterFocused(s) => self.user.variable_name_filter_focused = s,
-            Message::SetTimeEditFocused(s) => self.time_edit_focused = s,
-            Message::SetRequestTimeEditFocus(s) => self.request_time_edit_focus = s,
+            Message::SetWidgetFocused(id, s) => {
+                self.widget_focused.insert(id, s);
+            }
+            Message::SetRequestWidgetFocus(id, s) => {
+                self.widget_request_focus.insert(id, s);
+            }
+            Message::ClearAllWidgetFocuses => {
+                self.widget_focused.clear();
+                self.widget_request_focus.clear();
+            }
             Message::SetVariableNameFilterType(variable_name_filter_type) => {
                 self.user.variable_filter.name_filter_type = variable_name_filter_type;
             }

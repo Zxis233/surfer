@@ -465,7 +465,10 @@ impl SurferShortcuts {
                 msgs.push(Message::ZoomToFit { viewport_idx: 0 });
             }
             ShortcutAction::GoToTime => {
-                msgs.push(Message::SetRequestTimeEditFocus(true));
+                msgs.push(Message::SetRequestWidgetFocus(
+                    "toolbar-time".to_string(),
+                    true,
+                ));
             }
         }
     }
