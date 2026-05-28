@@ -359,6 +359,15 @@ fn variable_digital_draw_commands(
 }
 
 impl SystemState {
+    fn canvas_pos_to_item_space(&self, response: &Response, waves: &WaveData, pos: Pos2) -> Pos2 {
+        let item_y_offset = (waves.top_item_draw_offset - response.rect.top()).max(0.0);
+
+        Pos2 {
+            x: pos.x,
+            y: pos.y - item_y_offset,
+        }
+    }
+
     fn sorted_drawing_infos(waves: &WaveData) -> Vec<&ItemDrawingInfo> {
         let mut sorted = waves.drawing_infos.iter().collect::<Vec<_>>();
         sorted.sort_by(|a, b| a.top().total_cmp(&b.top()));
@@ -740,8 +749,6 @@ impl SystemState {
         let y_zero = to_screen.transform_pos(Pos2::ZERO).y;
         let default_timeline_height = cfg.text_size;
         let pointer_pos_global = ui.input(|i| i.pointer.interact_pos());
-        let pointer_pos_canvas = pointer_pos_global
-            .map(|p| self.transform_pos(to_screen, p, default_timeline_height, true));
         let pointer_pos_mouse_gesture = pointer_pos_global
             .map(|p| self.transform_pos(to_screen, p, default_timeline_height, false));
         let num_timestamps = waves.safe_num_timestamps();
@@ -796,10 +803,21 @@ impl SystemState {
         });
 
         let modifiers = ui.input(|i| i.modifiers);
+        let do_measure = self.do_measure(&modifiers);
+        let handle_cursor = !modifiers.command
+            && ((response.dragged_by(PointerButton::Primary) && !do_measure)
+                || response.clicked_by(PointerButton::Primary));
+        let needs_pointer_pos_canvas = self.annotation_kind.is_none() || handle_cursor;
+        let pointer_pos_canvas = if needs_pointer_pos_canvas {
+            pointer_pos_global
+                .map(|p| to_screen.inverse().transform_pos(p))
+                .map(|p| self.canvas_pos_to_item_space(&response, waves, p))
+        } else {
+            None
+        };
+
         // Handle cursor
-        if !modifiers.command
-            && ((response.dragged_by(PointerButton::Primary) && !self.do_measure(&modifiers))
-                || response.clicked_by(PointerButton::Primary))
+        if handle_cursor
             && let Some(snap_point) =
                 self.snap_to_edge(pointer_pos_canvas, waves, frame_width, viewport_idx)
         {
@@ -841,12 +859,36 @@ impl SystemState {
             ));
         }
 
-        // Check for measure drag starting
-        if response.drag_started_by(PointerButton::Primary) && self.do_measure(&modifiers) {
-            msgs.push(Message::SetMeasureDragStart(
-                ui.input(|i| i.pointer.press_origin())
-                    .map(|p| self.transform_pos(to_screen, p, default_timeline_height, false)),
-            ));
+        // Check for measure drag starting. Snap the start X to the nearest transition
+        // using the same logic as when placing cursors, but keep the original Y.
+        if do_measure && response.drag_started_by(PointerButton::Primary) {
+            let press_origin_local = ui
+                .input(|i| i.pointer.press_origin())
+                .map(|p| self.transform_pos(to_screen, p, default_timeline_height, false));
+            let press_origin_canvas =
+                press_origin_local.map(|p| self.canvas_pos_to_item_space(&response, waves, p));
+
+            let snapped_pos = if let (Some(start_pos), Some(start_pos_canvas)) =
+                (press_origin_local, press_origin_canvas)
+            {
+                // Snap to nearest edge/time then convert back to pixel X
+                if let Some(snap_time) =
+                    self.snap_to_edge(Some(start_pos_canvas), waves, frame_width, viewport_idx)
+                {
+                    let x = waves.viewports[viewport_idx].pixel_from_time(
+                        &snap_time,
+                        frame_width,
+                        &num_timestamps,
+                    );
+                    Some(Pos2 { x, y: start_pos.y })
+                } else {
+                    Some(start_pos)
+                }
+            } else {
+                None
+            };
+
+            msgs.push(Message::SetMeasureDragStart(snapped_pos));
         }
 
         let mut ctx = DrawingContext {
@@ -902,6 +944,7 @@ impl SystemState {
             self.draw_measure_widget(
                 ui,
                 waves,
+                pointer_pos_canvas,
                 pointer_pos_mouse_gesture,
                 &response,
                 msgs,
@@ -1692,10 +1735,8 @@ impl SystemState {
         let num_timestamps = waves.safe_num_timestamps();
         let timestamp = viewport.as_time_bigint(pos.x, frame_width, &num_timestamps);
         if let Some(utimestamp) = timestamp.to_biguint()
-            && let Some(vidx) = waves.get_item_at_y(pos.y)
-            && let Some(node) = waves.items_tree.get_visible(vidx)
-            && let Some(DisplayedItem::Variable(variable)) =
-                &waves.displayed_items.get(&node.item_ref)
+            && let Some(item_ref) = waves.item_ref_at_canvas_y(pos.y)
+            && let Some(DisplayedItem::Variable(variable)) = &waves.displayed_items.get(&item_ref)
             && let Ok(Some(res)) = waves
                 .inner
                 .as_waves()

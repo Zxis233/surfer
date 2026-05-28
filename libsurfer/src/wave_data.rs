@@ -924,19 +924,16 @@ impl WaveData {
         if self.drawing_infos.is_empty() {
             return None;
         }
-        let first_element_top = self.drawing_top().unwrap();
-        let first_element_bottom = self.drawing_bottom().unwrap();
-        let threshold = y + first_element_top + self.scroll_offset;
-        if first_element_bottom <= threshold {
+        let threshold = y + self.top_item_draw_offset;
+        if self.drawing_bottom().unwrap() <= threshold {
             return None;
         }
 
         self.drawing_infos
             .iter()
-            .enumerate()
             .rev()
-            .find(|(_, di)| di.top() <= threshold)
-            .map(|(vidx, _)| VisibleItemIndex(vidx))
+            .find(|di| di.top() <= threshold)
+            .map(ItemDrawingInfo::vidx)
     }
 
     pub fn scroll_to_item(&mut self, idx: usize) {
@@ -1150,5 +1147,78 @@ impl WaveData {
             self.active_scope = None;
         }
         Some(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data_container::DataContainer;
+    use crate::displayed_item_tree::DisplayedItemTree;
+    use crate::view::{DividerDrawingInfo, ItemDrawingInfo};
+    use crate::viewport::Viewport;
+    use crate::wave_source::{WaveFormat, WaveSource};
+
+    fn wave_data_with_rows(top_item_draw_offset: f32) -> WaveData {
+        WaveData {
+            inner: DataContainer::Empty,
+            source: WaveSource::Data,
+            format: WaveFormat::Vcd,
+            active_scope: None,
+            items_tree: DisplayedItemTree::new(),
+            displayed_items: HashMap::new(),
+            display_item_ref_counter: 0,
+            viewports: vec![Viewport::new()],
+            cursor: None,
+            markers: HashMap::new(),
+            selected_annotation: None,
+            annotations: Vec::new(),
+            annotation_groups: Vec::new(),
+            annotation_list_visible: false,
+            annotation_counter: 0,
+            last_active_viewport_idx: 0,
+            annotation_menu_pos: None,
+            annotation_menu_time: None,
+            focused_item: None,
+            focused_transaction: (None, None),
+            default_variable_name_type: VariableNameType::Local,
+            scroll_offset: 80.0,
+            display_variable_indices: false,
+            graphics: HashMap::new(),
+            drawing_infos: vec![
+                ItemDrawingInfo::Divider(DividerDrawingInfo {
+                    vidx: VisibleItemIndex(0),
+                    top: 120.0,
+                    bottom: 140.0,
+                }),
+                ItemDrawingInfo::Divider(DividerDrawingInfo {
+                    vidx: VisibleItemIndex(1),
+                    top: 140.0,
+                    bottom: 160.0,
+                }),
+            ],
+            top_item_draw_offset,
+            total_height: 40.0,
+            old_num_timestamps: None,
+            cache_generation: 0,
+            inflight_caches: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn get_item_at_y_uses_top_item_draw_offset_space() {
+        let waves = wave_data_with_rows(120.0);
+
+        assert_eq!(waves.get_item_at_y(5.0), Some(VisibleItemIndex(0)));
+        assert_eq!(waves.get_item_at_y(25.0), Some(VisibleItemIndex(1)));
+        assert_eq!(waves.get_item_at_y(45.0), None);
+    }
+
+    #[test]
+    fn get_item_at_y_is_not_shifted_by_scroll_offset() {
+        let waves = wave_data_with_rows(150.0);
+
+        assert_eq!(waves.get_item_at_y(-25.0), Some(VisibleItemIndex(0)));
+        assert_eq!(waves.get_item_at_y(5.0), Some(VisibleItemIndex(1)));
     }
 }

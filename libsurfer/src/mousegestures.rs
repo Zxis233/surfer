@@ -80,18 +80,14 @@ impl SystemState {
         if snap_y {
             let local_y = y - y_offset;
 
-            if let Some(snapped_y) = waves
-                .get_item_at_y(local_y)
-                .and_then(|vidx| waves.items_tree.get_visible(vidx))
-                .and_then(|node| {
-                    let gy = GraphicsY {
-                        item: node.item_ref,
-                        anchor,
-                    };
+            if let Some(snapped_y) = waves.item_ref_at_canvas_y(local_y).and_then(|item_ref| {
+                let gy = GraphicsY {
+                    item: item_ref,
+                    anchor,
+                };
 
-                    waves.get_item_y(&gy)
-                })
-            {
+                waves.get_item_y(&gy)
+            }) {
                 y = snapped_y + y_offset;
             }
         }
@@ -478,27 +474,19 @@ impl SystemState {
 
         let get_anchored_y = |y: f32, anchor: Anchor| {
             waves
-                .get_item_at_y(y)
-                .and_then(|vidx| waves.items_tree.get_visible(vidx))
-                .map(|node| GraphicsY {
-                    item: node.item_ref,
-                    anchor,
-                })
+                .item_ref_at_canvas_y(y)
+                .map(|item| GraphicsY { item, anchor })
         };
 
         let get_percentual_y = |lookup_y: f32, scale_y: f32| {
-            waves
-                .get_item_at_y(lookup_y)
-                .and_then(|vidx| waves.items_tree.get_visible(vidx))
-                .map(|node| {
-                    let item = node.item_ref;
-                    let p = waves.get_item_y_scale(item, scale_y);
+            waves.item_ref_at_canvas_y(lookup_y).map(|item| {
+                let p = waves.get_item_y_scale(item, scale_y);
 
-                    GraphicsY {
-                        item,
-                        anchor: Anchor::Percentual(p.unwrap_or(0.)),
-                    }
-                })
+                GraphicsY {
+                    item,
+                    anchor: Anchor::Percentual(p.unwrap_or(0.)),
+                }
+            })
         };
 
         let (wave_from, wave_to) = if modifiers.shift {
@@ -764,6 +752,7 @@ impl SystemState {
         &self,
         egui_ctx: &Context,
         waves: &WaveData,
+        pointer_pos_item_space: Option<Pos2>,
         pointer_pos_canvas: Option<Pos2>,
         response: &Response,
         msgs: &mut Vec<Message>,
@@ -775,8 +764,21 @@ impl SystemState {
             if !modifiers.command
                 && response.dragged_by(PointerButton::Primary)
                 && self.do_measure(&modifiers)
-                && let Some(current_location) = pointer_pos_canvas
+                && let Some(mut current_location) = pointer_pos_canvas
             {
+                // Snap current X to nearest edge/time (same logic as cursor placement)
+                let frame_width = response.rect.width();
+                if let Some(snap_time) =
+                    self.snap_to_edge(pointer_pos_item_space, waves, frame_width, viewport_idx)
+                {
+                    let x = waves.viewports[viewport_idx].pixel_from_time(
+                        &snap_time,
+                        frame_width,
+                        &waves.safe_num_timestamps(),
+                    );
+                    current_location.x = x;
+                }
+
                 self.draw_zoom_in_gesture(
                     start_location,
                     current_location,
