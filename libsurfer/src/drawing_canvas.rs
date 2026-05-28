@@ -797,7 +797,7 @@ impl SystemState {
                         x: i.pointer.delta().y,
                         y: i.pointer.delta().x,
                     },
-                    viewport_idx: 0,
+                    viewport_idx,
                 });
             }
         });

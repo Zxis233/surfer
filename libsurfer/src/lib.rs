@@ -2279,6 +2279,9 @@ impl SystemState {
                 if waves.viewports.len() > 1 {
                     waves.viewports.pop();
                     self.draw_data.borrow_mut().pop();
+                    waves.last_active_viewport_idx = waves
+                        .last_active_viewport_idx
+                        .min(waves.viewports.len() - 1);
                 }
             }
             Message::SelectTheme(theme_name) => {
@@ -2533,10 +2536,11 @@ impl SystemState {
             }
 
             Message::SetActiveViewport(idx) => {
-                if let Some(waves) = self.user.waves.as_mut()
-                    && idx < waves.viewports.len()
-                {
-                    waves.last_active_viewport_idx = idx;
+                if let Some(waves) = self.user.waves.as_mut() {
+                    let Some(last_idx) = waves.viewports.len().checked_sub(1) else {
+                        return None;
+                    };
+                    waves.last_active_viewport_idx = idx.min(last_idx);
                 }
             }
 

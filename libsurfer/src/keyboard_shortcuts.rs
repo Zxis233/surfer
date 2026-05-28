@@ -330,10 +330,22 @@ impl SurferShortcuts {
                 msgs.push(Message::SetToolbarVisible(!state.show_toolbar()));
             }
             ShortcutAction::GoToEnd => {
-                msgs.push(Message::GoToEnd { viewport_idx: 0 });
+                msgs.push(Message::GoToEnd {
+                    viewport_idx: state
+                        .user
+                        .waves
+                        .as_ref()
+                        .map_or(0, |waves| waves.last_active_viewport_idx),
+                });
             }
             ShortcutAction::GoToStart => {
-                msgs.push(Message::GoToStart { viewport_idx: 0 });
+                msgs.push(Message::GoToStart {
+                    viewport_idx: state
+                        .user
+                        .waves
+                        .as_ref()
+                        .map_or(0, |waves| waves.last_active_viewport_idx),
+                });
             }
             ShortcutAction::SaveStateFile => {
                 msgs.push(Message::SaveStateFile(state.user.state_file.clone()));
@@ -373,15 +385,23 @@ impl SurferShortcuts {
             ShortcutAction::ZoomIn => {
                 msgs.push(Message::CanvasZoom {
                     mouse_ptr: None,
-                    delta: 2.0,
-                    viewport_idx: 0,
+                    delta: 0.5,
+                    viewport_idx: state
+                        .user
+                        .waves
+                        .as_ref()
+                        .map_or(0, |waves| waves.last_active_viewport_idx),
                 });
             }
             ShortcutAction::ZoomOut => {
                 msgs.push(Message::CanvasZoom {
                     mouse_ptr: None,
-                    delta: 0.5,
-                    viewport_idx: 0,
+                    delta: 2.0,
+                    viewport_idx: state
+                        .user
+                        .waves
+                        .as_ref()
+                        .map_or(0, |waves| waves.last_active_viewport_idx),
                 });
             }
             ShortcutAction::UiZoomIn => {
@@ -462,7 +482,13 @@ impl SurferShortcuts {
                 msgs.push(Message::AddDivider(None, None));
             }
             ShortcutAction::ZoomToFit => {
-                msgs.push(Message::ZoomToFit { viewport_idx: 0 });
+                msgs.push(Message::ZoomToFit {
+                    viewport_idx: state
+                        .user
+                        .waves
+                        .as_ref()
+                        .map_or(0, |waves| waves.last_active_viewport_idx),
+                });
             }
             ShortcutAction::GoToTime => {
                 msgs.push(Message::SetRequestTextEditFocus(

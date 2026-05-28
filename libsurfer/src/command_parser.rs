@@ -201,6 +201,17 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
         .as_ref()
         .map(|w| w.inner.metadata().timescale.clone());
 
+    let viewport_idx = state
+        .user
+        .waves
+        .as_ref()
+        .map_or(0, |waves| waves.last_active_viewport_idx);
+    let viewport_indices = state.user.waves.as_ref().map_or(vec![], |waves| {
+        (0..waves.viewports.len())
+            .map(|idx| idx.to_string())
+            .collect()
+    });
+
     let markers = if let Some(waves) = &state.user.waves {
         waves
             .items_tree
@@ -335,6 +346,7 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
             "show_marker_window",
             "viewport_add",
             "viewport_remove",
+            "viewport_set_active",
             "transition_next",
             "transition_previous",
             "transaction_next",
@@ -460,22 +472,22 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                     }),
                 ),
                 "scroll_to_start" | "goto_start" => {
-                    Some(Command::Terminal(Message::GoToStart { viewport_idx: 0 }))
+                    Some(Command::Terminal(Message::GoToStart { viewport_idx }))
                 }
                 "scroll_to_end" | "goto_end" => {
-                    Some(Command::Terminal(Message::GoToEnd { viewport_idx: 0 }))
+                    Some(Command::Terminal(Message::GoToEnd { viewport_idx }))
                 }
                 "zoom_in" => Some(Command::Terminal(Message::CanvasZoom {
                     mouse_ptr: None,
                     delta: 0.5,
-                    viewport_idx: 0,
+                    viewport_idx,
                 })),
                 "zoom_out" => Some(Command::Terminal(Message::CanvasZoom {
                     mouse_ptr: None,
                     delta: 2.0,
-                    viewport_idx: 0,
+                    viewport_idx,
                 })),
-                "zoom_fit" => Some(Command::Terminal(Message::ZoomToFit { viewport_idx: 0 })),
+                "zoom_fit" => Some(Command::Terminal(Message::ZoomToFit { viewport_idx })),
                 "zoom_to" => {
                     let timescale_for_zoom = timescale.clone();
                     Some(Command::NonTerminal(
@@ -535,7 +547,7 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                             Some(Command::Terminal(Message::ZoomToRange {
                                 start: start_time,
                                 end: end_time,
-                                viewport_idx: 0,
+                                viewport_idx,
                             }))
                         }),
                     ))
@@ -1182,6 +1194,13 @@ pub(crate) fn get_parser(state: &SystemState) -> Command<Message> {
                 ),
                 "viewport_add" => Some(Command::Terminal(Message::AddViewport)),
                 "viewport_remove" => Some(Command::Terminal(Message::RemoveViewport)),
+                "viewport_set_active" => single_word(
+                    viewport_indices.clone(),
+                    Box::new(|word| {
+                        let idx = word.parse::<usize>().ok()?;
+                        Some(Command::Terminal(Message::SetActiveViewport(idx)))
+                    }),
+                ),
                 "pause_simulation" => Some(Command::Terminal(Message::PauseSimulation)),
                 "unpause_simulation" => Some(Command::Terminal(Message::UnpauseSimulation)),
                 "undo" => Some(Command::Terminal(Message::Undo(1))),

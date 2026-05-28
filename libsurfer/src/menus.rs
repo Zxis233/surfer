@@ -198,13 +198,18 @@ impl SystemState {
             b("Exit", Message::Exit).add_closing_menu(msgs, ui);
         });
         ui.menu_button("View", |ui: &mut Ui| {
+            let viewport_idx = self
+                .user
+                .waves
+                .as_ref()
+                .map_or(0, |waves| waves.last_active_viewport_idx);
             ui.style_mut().wrap_mode = Some(TextWrapMode::Extend);
             b(
                 "Zoom in",
                 Message::CanvasZoom {
                     mouse_ptr: None,
                     delta: 0.5,
-                    viewport_idx: 0,
+                    viewport_idx,
                 },
             )
             .shortcut(
@@ -221,7 +226,7 @@ impl SystemState {
                 Message::CanvasZoom {
                     mouse_ptr: None,
                     delta: 2.0,
-                    viewport_idx: 0,
+                    viewport_idx,
                 },
             )
             .shortcut(
@@ -233,7 +238,7 @@ impl SystemState {
             .enabled(waves_loaded)
             .add_closing_menu(msgs, ui);
 
-            b("Zoom to fit", Message::ZoomToFit { viewport_idx: 0 })
+            b("Zoom to fit", Message::ZoomToFit { viewport_idx })
                 .shortcut(
                     self.user
                         .config
@@ -245,7 +250,7 @@ impl SystemState {
 
             ui.separator();
 
-            b("Go to start", Message::GoToStart { viewport_idx: 0 })
+            b("Go to start", Message::GoToStart { viewport_idx })
                 .shortcut(
                     self.user
                         .config
@@ -254,7 +259,7 @@ impl SystemState {
                 )
                 .enabled(waves_loaded)
                 .add_closing_menu(msgs, ui);
-            b("Go to end", Message::GoToEnd { viewport_idx: 0 })
+            b("Go to end", Message::GoToEnd { viewport_idx })
                 .shortcut(
                     self.user
                         .config

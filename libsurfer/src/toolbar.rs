@@ -389,6 +389,11 @@ impl SystemState {
     }
 
     fn draw_toolbar_group_zoom(&self, ui: &mut Ui, msgs: &mut Vec<Message>, wave_loaded: bool) {
+        let viewport_idx = self
+            .user
+            .waves
+            .as_ref()
+            .map_or(0, |waves| waves.last_active_viewport_idx);
         add_toolbar_button(
             ui,
             msgs,
@@ -397,7 +402,7 @@ impl SystemState {
             Message::CanvasZoom {
                 mouse_ptr: None,
                 delta: 0.5,
-                viewport_idx: 0,
+                viewport_idx,
             },
             wave_loaded,
         );
@@ -409,7 +414,7 @@ impl SystemState {
             Message::CanvasZoom {
                 mouse_ptr: None,
                 delta: 2.0,
-                viewport_idx: 0,
+                viewport_idx,
             },
             wave_loaded,
         );
@@ -418,7 +423,7 @@ impl SystemState {
             msgs,
             icons::ASPECT_RATIO_FILL,
             "Zoom to fit",
-            Message::ZoomToFit { viewport_idx: 0 },
+            Message::ZoomToFit { viewport_idx },
             wave_loaded,
         );
     }
@@ -429,12 +434,17 @@ impl SystemState {
         msgs: &mut Vec<Message>,
         wave_loaded: bool,
     ) {
+        let viewport_idx = self
+            .user
+            .waves
+            .as_ref()
+            .map_or(0, |waves| waves.last_active_viewport_idx);
         add_toolbar_button(
             ui,
             msgs,
             icons::REWIND_START_FILL,
             "Go to start",
-            Message::GoToStart { viewport_idx: 0 },
+            Message::GoToStart { viewport_idx },
             wave_loaded,
         );
         add_toolbar_button(
@@ -447,7 +457,7 @@ impl SystemState {
                     y: PER_SCROLL_EVENT * SCROLL_EVENTS_PER_PAGE,
                     x: 0.,
                 },
-                viewport_idx: 0,
+                viewport_idx,
             },
             wave_loaded,
         );
@@ -461,7 +471,7 @@ impl SystemState {
                     y: PER_SCROLL_EVENT,
                     x: 0.,
                 },
-                viewport_idx: 0,
+                viewport_idx,
             },
             wave_loaded,
         );
@@ -475,7 +485,7 @@ impl SystemState {
                     y: -PER_SCROLL_EVENT,
                     x: 0.,
                 },
-                viewport_idx: 0,
+                viewport_idx,
             },
             wave_loaded,
         );
@@ -489,7 +499,7 @@ impl SystemState {
                     y: -PER_SCROLL_EVENT * SCROLL_EVENTS_PER_PAGE,
                     x: 0.,
                 },
-                viewport_idx: 0,
+                viewport_idx,
             },
             wave_loaded,
         );
@@ -498,7 +508,7 @@ impl SystemState {
             msgs,
             icons::FORWARD_END_FILL,
             "Go to end",
-            Message::GoToEnd { viewport_idx: 0 },
+            Message::GoToEnd { viewport_idx },
             wave_loaded,
         );
     }

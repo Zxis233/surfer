@@ -341,6 +341,13 @@ Not all commands are available unless a file is loaded. Also, some commands are 
 
   Remove the most recently added viewport.
 
+* ``viewport_set_active <INDEX>``
+
+  Set the active viewport by zero-based index.
+  Command completion suggests currently available viewport indices.
+  If ``INDEX`` is larger than the largest available viewport index,
+  the active viewport is set to that largest available index instead.
+
 ## State files
 
 * ``load_state <FILE_NAME>``

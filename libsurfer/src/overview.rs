@@ -43,22 +43,30 @@ impl SystemState {
 
         let num_timestamps = waves.safe_num_timestamps();
         let viewport_all = waves.viewport_all();
-        let fill_color = self
-            .user
-            .config
-            .theme
-            .canvas_colors
-            .foreground
-            .gamma_multiply(0.3);
+        let base_fill_color = self.user.config.theme.canvas_colors.foreground;
 
         // Draw rectangles for each viewport
         waves
             .viewports
             .iter()
-            .map(|viewport| get_viewport_rect(&ctx, &num_timestamps, &viewport_all, viewport))
-            .for_each(|rect| {
-                ctx.painter
-                    .rect_filled(rect, CornerRadius::ZERO, fill_color);
+            .enumerate()
+            .map(|(idx, viewport)| {
+                (
+                    idx,
+                    get_viewport_rect(&ctx, &num_timestamps, &viewport_all, viewport),
+                )
+            })
+            .for_each(|(idx, rect)| {
+                let gamma = if idx == waves.last_active_viewport_idx {
+                    0.6
+                } else {
+                    0.3
+                };
+                ctx.painter.rect_filled(
+                    rect,
+                    CornerRadius::ZERO,
+                    base_fill_color.gamma_multiply(gamma),
+                );
             });
 
         // Draw cursor
