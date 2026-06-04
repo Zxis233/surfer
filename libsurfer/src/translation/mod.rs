@@ -376,11 +376,13 @@ pub fn all_translators() -> TranslatorList {
     let mut basic_translators: Vec<Arc<DynBasicTranslator>> = vec![
         Arc::new(BitTranslator {}),
         Arc::new(HexTranslator {}),
+        Arc::new(HexNoLeadingZerosTranslator {}),
         Arc::new(OctalTranslator {}),
         Arc::new(GroupingBinaryTranslator {}),
         Arc::new(BinaryTranslator {}),
         Arc::new(ASCIITranslator {}),
         Arc::new(new_rv32_translator()),
+        Arc::new(new_rv32_reg_translator()),
         Arc::new(new_rv64_translator()),
         Arc::new(new_mips_translator()),
         Arc::new(new_la64_translator()),
@@ -442,7 +444,7 @@ impl TranslatorList {
     #[must_use]
     pub fn new(basic: Vec<Arc<DynBasicTranslator>>, translators: Vec<Arc<DynTranslator>>) -> Self {
         Self {
-            default: "Hexadecimal".to_string(),
+            default: "Hexadecimal (No leading zeros)".to_string(),
             inner: basic
                 .into_iter()
                 .map(|t| (t.name(), AnyTranslator::Basic(t)))
@@ -847,6 +849,7 @@ mod tests {
                 .all_translator_names()
                 .contains(&translators.default.as_str())
         );
+        assert_eq!(translators.default, "Hexadecimal (No leading zeros)");
 
         // Check we can get a translator by name
         let hex_translator = translators.get_translator("Hexadecimal");
@@ -855,6 +858,7 @@ mod tests {
         // Check basic translator names subset
         let basic_names = translators.basic_translator_names();
         assert!(basic_names.contains(&"Hexadecimal"));
+        assert!(basic_names.contains(&"Hexadecimal (No leading zeros)"));
         assert!(basic_names.contains(&"Binary"));
     }
 

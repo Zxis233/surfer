@@ -169,6 +169,11 @@ fn setup_custom_font(ctx: &egui::Context) {
     let mut fonts = FontDefinitions::default();
 
     fonts.font_data.insert(
+        "maple".to_owned(),
+        FontData::from_static(include_bytes!("../assets/fonts/Maple.ttf")).into(),
+    );
+
+    fonts.font_data.insert(
         "remix_icons".to_owned(),
         FontData::from_static(egui_remixicon::FONT).into(),
     );
@@ -177,13 +182,25 @@ fn setup_custom_font(ctx: &egui::Context) {
         .families
         .get_mut(&FontFamily::Proportional)
         .unwrap()
-        .push("remix_icons".to_owned());
+        .insert(0, "remix_icons".to_owned());
+
+    fonts
+        .families
+        .get_mut(&FontFamily::Proportional)
+        .unwrap()
+        .insert(1, "maple".to_owned());
 
     fonts
         .families
         .get_mut(&FontFamily::Monospace)
         .unwrap()
-        .push("remix_icons".to_owned());
+        .insert(0, "remix_icons".to_owned());
+
+    fonts
+        .families
+        .get_mut(&FontFamily::Monospace)
+        .unwrap()
+        .insert(1, "maple".to_owned());
 
     ctx.set_fonts(fonts);
 }

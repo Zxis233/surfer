@@ -45,3 +45,4 @@ tracing.workspace = true
 
 [build-dependencies]
 vergen-gitcl = { workspace = true, features = ["build"] }
+winresource.workspace = true

@@ -1,0 +1,101 @@
+name: Build Windows Binary
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: ""
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史以便访问标签
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-git-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-target-
+
+      - name: Get version info
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(git describe --tags --always --dirty)
+          VERGEN_GIT_DESCRIBE="${VERSION}-Esing"
+          CUSTOM_GIT_DESCRIBE="${VERSION}-Esing"
+          echo "version=${VERGEN_GIT_DESCRIBE}" >> "$GITHUB_OUTPUT"
+          echo "Building version: ${CUSTOM_GIT_DESCRIBE}"
+
+      - name: Build release binary
+        run: |
+          cargo build --release --no-default-features --features accesskit,performance_plot,python --color always
+
+      - name: Prepare artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp target/release/surfer.exe dist/
+          # 如果没有 surver.exe，请删除下一行
+          cp target/release/surver.exe dist/
+          echo "${{ steps.version.outputs.version }}" > dist/VERSION.txt
+          ls -la dist/
+
+      - name: Create zip archive
+        shell: bash
+        run: |
+          cd dist
+          7z a ../surfer_win_esing.zip surfer.exe surver.exe VERSION.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: surfer-windows-esing-${{ steps.version.outputs.version }}
+          path: |
+            surfer_win_esing.zip
+            target/release/surfer.exe
+            target/release/surver.exe
+          retention-days: 30
+
+      - name: Upload release assets (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            surfer_win_esing.zip
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

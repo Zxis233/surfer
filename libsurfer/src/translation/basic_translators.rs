@@ -104,6 +104,32 @@ impl BasicTranslator<VarId, ScopeId> for HexTranslator {
     }
 }
 
+pub struct HexNoLeadingZerosTranslator {}
+
+impl BasicTranslator<VarId, ScopeId> for HexNoLeadingZerosTranslator {
+    fn name(&self) -> String {
+        String::from("Hexadecimal (No leading zeros)")
+    }
+
+    fn basic_translate(&self, num_bits: u32, value: &VariableValue) -> (String, ValueKind) {
+        match value {
+            VariableValue::BigUint(v) => (format!("{v:x}"), ValueKind::Normal),
+            VariableValue::String(s) => {
+                let (formatted, kind) = map_to_radix(s, 4, num_bits);
+                let trimmed = formatted.trim_start_matches('0');
+                (
+                    if trimmed.is_empty() { "0" } else { trimmed }.to_string(),
+                    kind,
+                )
+            }
+        }
+    }
+
+    fn basic_numeric_range(&self, num_bits: u32) -> Option<NumericRange> {
+        integer_numeric_range(num_bits, false)
+    }
+}
+
 pub struct BitTranslator {}
 
 impl BasicTranslator<VarId, ScopeId> for BitTranslator {
@@ -628,6 +654,34 @@ mod test {
                 .basic_translate(5, &VariableValue::BigUint(BigUint::from(0u32)))
                 .0,
             "00"
+        );
+    }
+
+    #[test]
+    fn hexadecimal_no_leading_zeros_translation_trims_padding() {
+        assert_eq!(
+            HexNoLeadingZerosTranslator {}
+                .basic_translate(5, &VariableValue::String("1000".to_string()))
+                .0,
+            "8"
+        );
+        assert_eq!(
+            HexNoLeadingZerosTranslator {}
+                .basic_translate(10, &VariableValue::String("1z00x0".to_string()))
+                .0,
+            "zx"
+        );
+        assert_eq!(
+            HexNoLeadingZerosTranslator {}
+                .basic_translate(5, &VariableValue::BigUint(BigUint::from(0b1000u32)))
+                .0,
+            "8"
+        );
+        assert_eq!(
+            HexNoLeadingZerosTranslator {}
+                .basic_translate(5, &VariableValue::BigUint(BigUint::from(0u32)))
+                .0,
+            "0"
         );
     }
 

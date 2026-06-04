@@ -116,6 +116,7 @@ web-sys = { version = "= 0.3.97", features = ["Location", "Navigator", "UrlSearc
 web-time = "1.1.0"
 wellen = { version = "0.21.0", features = ["serde1"] }
 whoami = "2"
+winresource = "0.1"
 
 [profile.release]
 opt-level = 3 # fast and small wasm

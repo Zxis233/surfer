@@ -230,6 +230,7 @@ mod main_impl {
                     state.user.config.layout.window_width as f32,
                     state.user.config.layout.window_height as f32,
                 ))
+                .with_maximized(true)
                 .with_position(Pos2::new(
                     state.user.config.layout.window_x_position as f32,
                     state.user.config.layout.window_y_position as f32,
